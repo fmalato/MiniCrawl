@@ -1,4 +1,5 @@
 from miniworld.params import DomainParams
+from enum import Enum
 
 
 # Default simulation parameters
@@ -18,3 +19,10 @@ DEFAULT_PARAMS.set("cam_pitch", 0, -5, 5)
 DEFAULT_PARAMS.set("cam_fov_y", 60, 55, 65)
 DEFAULT_PARAMS.set("cam_height", 1.5, 1.45, 1.55)
 DEFAULT_PARAMS.set("cam_fwd_disp", 0, -0.05, 0.10)
+
+class ObjectIndices(Enum):
+    EMPTY = 0
+    ROOM = 1
+    CORRIDOR = 2
+    ANGLE_JUNCTION = 3
+    T_JUNCTION = 4

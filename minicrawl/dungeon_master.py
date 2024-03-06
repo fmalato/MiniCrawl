@@ -1,6 +1,6 @@
 import numpy as np
 
-from params import ObjectIndices
+from minicrawl.params import ObjectIndices
 
 
 class DungeonMaster:
@@ -23,9 +23,9 @@ class DungeonMaster:
         self._increment_freq = increment_freq
         self._grid = None
         self._current_level = 0
+        self._min_rooms = 4
         # Create first floor
         self._create_dungeon_floor()
-
 
     def _create_dungeon_floor(self):
         """
@@ -33,32 +33,59 @@ class DungeonMaster:
         :return: None
         """
         current_grid_size = self._grid_size + int(self._current_level / self._increment_freq)
-        self._grid = (np.resize([1, 0], current_grid_size ** 2))
-        self._grid = np.reshape(a=self._grid, newshape=(current_grid_size, current_grid_size))
+        self._grid = np.zeros(shape=(current_grid_size, current_grid_size))
+        self._grid[::2, ::2] = 1
+        self._grid[1::2, 1::2] = 1
+        # TODO: implement later on
+        """# Remove some rooms
+        self._draw_rooms()"""
         # TODO: creation rules
+        corridors = {}
         for i in range(current_grid_size):
             for j in range(current_grid_size):
-                possible_components = np.arange(self._available_components)
-                neighbors = self._get_neighbors(i, j)
-                if neighbors["top"] == ObjectIndices.ROOM or neighbors["bottom"] == ObjectIndices.ROOM or neighbors["left"] == ObjectIndices.ROOM or neighbors["right"] == ObjectIndices.ROOM:
-                    possible_components = np.delete(possible_components, ObjectIndices.ROOM)
+                if self._grid[i, j] != 1:
+                    connections = self._get_connections(i, j)
+                    #self._grid[i, j] = connections
+                    corridors[(i, j)] = connections
 
-    def _get_neighbors(self, i, j):
+        print("Hello")
+
+    def _draw_rooms(self):
+        num_rooms = int(np.sum(self._grid))
+        for i, j in np.ndindex(self._grid.shape):
+            if self._grid[i, j] == 1:
+                obj = np.random.randint(0, 2)
+                if obj == 0 and num_rooms > self._min_rooms:
+                    num_rooms -= 1
+                    self._grid[i, j] = obj
+
+    def _get_connections(self, row, col):
+        neighbors = self._get_neighbors(row, col)
+        connections = []
+        if np.random.uniform(0, 1) >= 0.5:
+            num_connections = np.random.randint(2, len(list(neighbors.keys())) + 1)
+            connections = np.random.choice(list(neighbors.keys()), size=num_connections, replace=False)
+
+        return connections
+
+
+
+    def _get_neighbors(self, row, col):
         """
             Retrieves objects in Manhattan neighborhood
-        :param i: int - row index
-        :param j: int - col index
+        :param row: int - row index
+        :param col: int - col index
         :return: dict - manhattan-neighbors of current location
         """
         neighbors = {}
-        if i > 0:
-            neighbors["top"] = self._grid[i - 1, j]
-        if i < self._grid_size - 1:
-            neighbors["bottom"] = self._grid[i + 1, j]
-        if j > 0:
-            neighbors["left"] = self._grid[i, j - 1]
-        if j > self._grid_size - 1:
-            neighbors["right"] = self._grid[i, j + 1]
+        if row > 0:
+            neighbors["top"] = self._grid[row - 1, col]
+        if row < self._grid_size - 1:
+            neighbors["bottom"] = self._grid[row + 1, col]
+        if col > 0:
+            neighbors["left"] = self._grid[row, col - 1]
+        if col < self._grid_size - 1:
+            neighbors["right"] = self._grid[row, col + 1]
 
         return neighbors
 

@@ -11,3 +11,8 @@ gym.register(
     id="MiniCrawl-TestDungeon-v0",
     entry_point="minicrawl.envs.testdungeon:TestDungeon"
 )
+
+gym.register(
+    id="MiniCrawl-FloorDungeon-v0",
+    entry_point="minicrawl.minicrawl:MiniCrawlEnv"
+)

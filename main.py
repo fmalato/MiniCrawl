@@ -8,8 +8,8 @@ from minicrawl.dungeon_master import DungeonMaster
 
 if __name__ == '__main__':
     controller = BaseController()
-    dm = DungeonMaster(grid_size=4, starting_grid_size=4)
-    env = gym.make("MiniCrawl-TestDungeon-v0", render_mode="human")
+    dm = DungeonMaster(starting_grid_size=4)
+    env = gym.make("MiniCrawl-FloorDungeon-v0", render_mode="human")
     obs, _ = env.reset(seed=np.random.randint(1, 100000))
     while True:
         action = controller.wait_press()

@@ -28,3 +28,44 @@ class ObjectIndices(IntEnum):
     ANGLE_JUNCTION = 3
     T_JUNCTION = 4
     CROSS_JUNCTION = 5
+
+
+DEFAULT_DM_PARAMS = dict(
+    starting_grid_size=4,
+    max_grid_size=None,
+    increment_freq=5,
+    connection_density=0.5
+)
+
+# TODO: doesn't work for values != 6 and != 3
+DEFAULT_CELL_SIZE = 6
+DEFAULT_EDGE_SIZE = 3
+
+DEFAULT_ROOM_PARAMS = dict(
+    edge_size=DEFAULT_CELL_SIZE,
+    wall_height=2.74,
+    floor_tex="floor_tiles_bw",
+    wall_tex="concrete",
+    ceil_text="concrete_tiles",
+    no_ceiling=False
+)
+
+DEFAULT_JUNCTION_PARAMS = dict(
+    cell_size=DEFAULT_CELL_SIZE,
+    edge_size=DEFAULT_EDGE_SIZE,
+    wall_height=2.74,
+    floor_tex="floor_tiles_bw",
+    wall_tex="concrete",
+    ceil_text="concrete_tiles",
+    no_ceiling=False
+)
+
+DEFAULT_CORRIDOR_PARAMS = dict(
+    cell_size=DEFAULT_CELL_SIZE,
+    junction_size=DEFAULT_EDGE_SIZE,
+    wall_height=2.74,
+    floor_tex="floor_tiles_bw",
+    wall_tex="concrete",
+    ceil_text="concrete_tiles",
+    no_ceiling=False
+)

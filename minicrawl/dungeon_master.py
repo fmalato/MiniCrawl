@@ -15,7 +15,7 @@ class DungeonMaster:
         3 - Angle junction
         4 - T-junction
     """
-    def __init__(self, grid_size, starting_grid_size=3, max_grid_size=None, increment_freq=5, connection_density=0.5):
+    def __init__(self, starting_grid_size=3, max_grid_size=None, increment_freq=5, connection_density=0.5):
         assert 0 < connection_density <= 1, "connection_density must be in (0, 1]"
         assert starting_grid_size >= 2, "starting_grid_size must be in [2, +inf)"
         if max_grid_size is not None:
@@ -23,13 +23,13 @@ class DungeonMaster:
         # Initialize attributes
         self._density = connection_density
         self._available_components = len(ObjectIndices)
-        self._grid_size = grid_size
+        self._grid_size = starting_grid_size
         self._starting_grid_size = starting_grid_size
         self._max_grid_size = max_grid_size
         self._increment_freq = increment_freq
         self._grid = None
         self._grid_graphs = []
-        self._room_connections = {}
+        self._connects = {}
         self._current_level = 0
         self._min_rooms = 4
         # Create first floor
@@ -44,25 +44,23 @@ class DungeonMaster:
         self._grid = np.zeros(shape=(current_grid_size, current_grid_size))
         self._grid[::2, ::2] = 1
         self._grid[1::2, 1::2] = 1
-        for coords in np.argwhere(self._grid == 1):
-            self._room_connections[tuple(coords)] = []
         # TODO: implement later on
         """# Remove some rooms
         self._draw_rooms()"""
         corridor_trees = []
-        connects = {}
+        self._connects = {}
         corridors = np.argwhere(self._grid == 0)
         for i, j in corridors:
                 connections = self._get_connections(i, j)
-                connects[(i, j)] = connections
+                self._connects[(i, j)] = connections
                 g = Graph(directed=False)
                 g.add_node((i, j))
                 for direction in connections:
-                    if direction == "right":
+                    if direction == "east":
                         g.add_egde((i, j), (i, j + 1))
-                    elif direction == "left":
+                    elif direction == "west":
                         g.add_egde((i, j), (i, j - 1))
-                    elif direction == "top":
+                    elif direction == "north":
                         g.add_egde((i, j), (i - 1, j))
                     else:
                         g.add_egde((i, j), (i + 1, j))
@@ -70,8 +68,10 @@ class DungeonMaster:
                     corridor_trees.append(g)
 
         self._build_maze_graph(corridor_trees)
-
-        print("Hello")
+        # Build a map for keeping track of node types
+        for n in self._maze_graph.get_nodes():
+            if self._grid[int(n[0]), int(n[1])] == 0:
+                self._grid[int(n[0]), int(n[1])] = 2
 
     def _draw_rooms(self):
         num_rooms = int(np.sum(self._grid))
@@ -100,13 +100,13 @@ class DungeonMaster:
         """
         neighbors = {}
         if row > 0:
-            neighbors["top"] = self._grid[row - 1, col]
+            neighbors["north"] = self._grid[row - 1, col]
         if row < self._grid_size - 1:
-            neighbors["bottom"] = self._grid[row + 1, col]
+            neighbors["south"] = self._grid[row + 1, col]
         if col > 0:
-            neighbors["left"] = self._grid[row, col - 1]
+            neighbors["west"] = self._grid[row, col - 1]
         if col < self._grid_size - 1:
-            neighbors["right"] = self._grid[row, col + 1]
+            neighbors["east"] = self._grid[row, col + 1]
 
         return neighbors
 
@@ -122,6 +122,7 @@ class DungeonMaster:
         :param corridor_trees: list of Graphs. Each graph is a tree with depth=1.
         :return: None
         """
+        # Step 1: Build the initial graph
         self._maze_graph = Graph(directed=False)
         for g in corridor_trees:
             tmp = [x for x in corridor_trees if x != g]
@@ -141,12 +142,12 @@ class DungeonMaster:
                             if x == t:
                                 x.remove_edge(n, edge)
 
-        # Add terminal nodes
+        # Step 2: Add terminal nodes
         for n in self._maze_graph.get_nodes():
             for e in self._maze_graph.get_edges(n):
                 if e not in self._maze_graph.get_nodes():
                     self._maze_graph.add_node(e)
-        # Compute connected components, in case there's more than one
+        # Step 3: Compute connected components, in case there's more than one
         connected_components = self._maze_graph.connected_components()
         # Heuristic: if more than one component, try to connect them
         if len(connected_components) > 1:
@@ -155,6 +156,29 @@ class DungeonMaster:
             for comp in connected_components:
                 self._maze_graph.connect_components(biggest, comp)
 
+    def get_current_level(self):
+        return self._current_level
+
     def increment_level(self):
         self._current_level += 1
         self._create_dungeon_floor()
+
+    def reset(self):
+        self._current_level = 0
+        self._grid_size = self._starting_grid_size
+        self._create_dungeon_floor()
+
+    def get_grid_size(self):
+        return (self._grid_size, self._grid_size)
+
+    def increment_grid_size(self):
+        if self._max_grid_size is not None:
+            self._grid_size += 1
+        else:
+            self._grid_size = np.min(self._grid_size + 1, self._max_grid_size)
+
+    def get_current_floor(self):
+        return self._maze_graph, self._grid
+
+    def get_connections_for_room(self, position):
+        return self._connects[position]

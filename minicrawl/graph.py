@@ -56,15 +56,17 @@ class Graph:
 
         return distance
 
-    def dfs(self, node, discovered=[], depth=0):
+    # TODO: fix dfs
+    def dfs(self, node, discovered=[], depth=0, max_depth=0):
         if node not in discovered:
             discovered.append(node)
-            depth += 1
             if node in self._graph.keys():
                 for edge in self._graph[node]:
-                    discovered, depth = self.dfs(edge, discovered, depth)
+                    discovered, depth, max_depth = self.dfs(edge, discovered, depth + 1, max_depth)
 
-        return discovered, depth
+        if depth > max_depth:
+            max_depth = depth
+        return discovered, depth, max_depth
 
     def connected_components(self, components=[], discovered=[]):
         for node in self._graph.keys():

@@ -73,7 +73,7 @@ class DungeonMaster:
 
         self._build_maze_graph(corridor_trees)
         #max_distance = self._maze_graph.longest_walkable_path()
-        connected_components, depth = self._maze_graph.dfs(self._maze_graph.get_nodes()[0], depth=0)
+        #connected_components, depth, max_depth = self._maze_graph.dfs(self._maze_graph.get_nodes()[0], depth=0)
 
         print("Hello")
 

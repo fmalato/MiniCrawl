@@ -12,6 +12,7 @@ class Graph:
     def add_egde(self, node1, node2):
         self._graph[node1].add(node2)
         if not self._directed:
+            self._graph[node2] = set()
             self._graph[node2].add(node1)
 
     def remove_node(self, node):
@@ -56,35 +57,82 @@ class Graph:
 
         return distance
 
-    # TODO: fix dfs
-    def dfs(self, node, discovered=[], depth=0, max_depth=0):
-        if node not in discovered:
-            discovered.append(node)
-            if node in self._graph.keys():
-                for edge in self._graph[node]:
-                    discovered, depth, max_depth = self.dfs(edge, discovered, depth + 1, max_depth)
+    def dfs(self, node, discovered, visited):
+        visited[node] = True
+        discovered.append(node)
+        for e in self._graph[node]:
+            if visited[e] == False:
+                discovered = self.dfs(e, discovered, visited)
 
-        if depth > max_depth:
-            max_depth = depth
-        return discovered, depth, max_depth
+        return discovered
 
-    def connected_components(self, components=[], discovered=[]):
-        for node in self._graph.keys():
-            if node not in discovered:
-                discovered.append(node)
-                for edge in self._graph[node]:
-                    if edge not in discovered:
-                        discovered.append(edge)
-            components.append(discovered)
+    def bfs(self, node):
+        visited = {}
+        for k in self._graph.keys():
+            visited[k] = False
+
+        queue = [node]
+        visited[node] = True
+
+        while queue:
+            n = queue.pop(0)
+            for e in self._graph[n]:
+                if not visited[e]:
+                    queue.append(e)
+                    visited[e] = True
+
+    def connected_components(self):
+        # Initialization
+        visited = {}
+        components = []
+        for n in self._graph.keys():
+            visited[n] = False
+        # Start search
+        for n in self._graph.keys():
+            if visited[n] == False:
+                comp = []
+                components.append(self.dfs(n, comp, visited))
 
         return components
-
 
     def get_nodes(self):
         return list(self._graph.keys())
 
     def get_edges(self, node):
         return list(self._graph[node])
+
+    def connect_components(self, comp1, comp2):
+        """
+        Try to find an easy connection between comp1 and comp2.
+        Check whether comp2's root is a manhattan-neighbor of some comp1 node
+        :param comp1: list of nodes. First component (one that will be retained regardless of the outcome)
+        :param comp2: list of nodes. Component that we are trying to connect.
+        :return: None
+        """
+        for n in comp2:
+            neighbors = self._get_manhattan_neighbors(n)
+            found = False
+            for neigh in neighbors:
+                # If a match is found, add an edge between the two nodes
+                if neigh in comp1:
+                    # Just in case
+                    if neigh not in self._graph.keys():
+                        self._graph[neigh] = set()
+                    self.add_egde(neigh, n)
+                    found = True
+                    break
+            if found:
+                break
+
+        # If no easy connection has been found... "bye bye, smaller component!"
+        if not found:
+            for e in self._graph[comp2[0]]:
+                self._graph.pop(e)
+            self._graph.pop(comp2[0])
+
+    @staticmethod
+    def _get_manhattan_neighbors(node):
+        return [(node[0] - 1, node[1]), (node[0] + 1, node[1]), (node[0], node[1] - 1), (node[0], node[1] + 1)]
 
 
 if __name__ == '__main__':

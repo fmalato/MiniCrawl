@@ -49,31 +49,27 @@ class DungeonMaster:
         # TODO: implement later on
         """# Remove some rooms
         self._draw_rooms()"""
-        # TODO: creation rules
         corridor_trees = []
         connects = {}
-        for i in range(current_grid_size):
-            for j in range(current_grid_size):
-                if self._grid[i, j] != 1:
-                    connections = self._get_connections(i, j)
-                    connects[(i, j)] = connections
-                    g = Graph(directed=True)
-                    g.add_node((i, j))
-                    for direction in connections:
-                        if direction == "right":
-                            g.add_egde((i, j), (i, j + 1))
-                        elif direction == "left":
-                            g.add_egde((i, j), (i, j - 1))
-                        elif direction == "top":
-                            g.add_egde((i, j), (i - 1, j))
-                        else:
-                            g.add_egde((i, j), (i + 1, j))
-                    if len(g.get_edges((i, j))) > 0:
-                        corridor_trees.append(g)
+        corridors = np.argwhere(self._grid == 0)
+        for i, j in corridors:
+                connections = self._get_connections(i, j)
+                connects[(i, j)] = connections
+                g = Graph(directed=False)
+                g.add_node((i, j))
+                for direction in connections:
+                    if direction == "right":
+                        g.add_egde((i, j), (i, j + 1))
+                    elif direction == "left":
+                        g.add_egde((i, j), (i, j - 1))
+                    elif direction == "top":
+                        g.add_egde((i, j), (i - 1, j))
+                    else:
+                        g.add_egde((i, j), (i + 1, j))
+                if len(g.get_edges((i, j))) > 0:
+                    corridor_trees.append(g)
 
         self._build_maze_graph(corridor_trees)
-        #max_distance = self._maze_graph.longest_walkable_path()
-        #connected_components, depth, max_depth = self._maze_graph.dfs(self._maze_graph.get_nodes()[0], depth=0)
 
         print("Hello")
 
@@ -115,7 +111,18 @@ class DungeonMaster:
         return neighbors
 
     def _build_maze_graph(self, corridor_trees):
-        self._maze_graph = Graph(directed=True)
+        """
+        Build a consistent maze graph for current floor, using a three-step process:
+        - First step: build a graph using the corridor_trees. A corridor_tree is a tree with depth=1 where the root
+                      is a corridor location with at least one connection to a  room, and each leaf is a connected
+                      room.
+        - Second step: adjust step 1 result by adding the terminal nodes
+        - Third step: if there are multiple connected components, try to link them with an additional edge. The
+                      procedure follows a heuristic, hence it might fail.
+        :param corridor_trees: list of Graphs. Each graph is a tree with depth=1.
+        :return: None
+        """
+        self._maze_graph = Graph(directed=False)
         for g in corridor_trees:
             tmp = [x for x in corridor_trees if x != g]
             # At this stage, there's only one node
@@ -133,6 +140,20 @@ class DungeonMaster:
                         for x in corridor_trees:
                             if x == t:
                                 x.remove_edge(n, edge)
+
+        # Add terminal nodes
+        for n in self._maze_graph.get_nodes():
+            for e in self._maze_graph.get_edges(n):
+                if e not in self._maze_graph.get_nodes():
+                    self._maze_graph.add_node(e)
+        # Compute connected components, in case there's more than one
+        connected_components = self._maze_graph.connected_components()
+        # Heuristic: if more than one component, try to connect them
+        if len(connected_components) > 1:
+            biggest = connected_components[np.argmax([len(x) for x in connected_components])]
+            connected_components.remove(biggest)
+            for comp in connected_components:
+                self._maze_graph.connect_components(biggest, comp)
 
     def increment_level(self):
         self._current_level += 1

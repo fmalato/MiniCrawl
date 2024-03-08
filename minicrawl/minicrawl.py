@@ -1,6 +1,7 @@
 from typing import Optional, Tuple
 
 import numpy as np
+import pyglet.text
 from gymnasium.core import ObsType
 from miniworld.miniworld import MiniWorldEnv
 from miniworld.entity import Box
@@ -41,6 +42,14 @@ class MiniCrawlEnv(MiniWorldEnv):
                          render_mode, view)
         self.rooms_dict = {}
         self.corr_dict = {}
+        self.level_label = pyglet.text.Label(
+            font_name="Arial",
+            font_size=14,
+            multiline=True,
+            width=400,
+            x=window_width + 5,
+            y=window_height - (self.obs_disp_height + 19) + 25,
+        )
 
     def step(self, action):
         return super().step(action)
@@ -58,6 +67,10 @@ class MiniCrawlEnv(MiniWorldEnv):
 
     def render(self):
         super().render()
+        # TODO: add level to text label
+        """self.text_label.delete()
+        self.text_label.text = self.text_label.text + f"\nLevel: {self._dungeon_master.get_current_level()}"
+        self.text_label.draw()"""
 
     def add_room(self, position):
         room = SquaredRoom(position, **self._room_kwargs)
@@ -102,17 +115,25 @@ class MiniCrawlEnv(MiniWorldEnv):
         for pos, corrs in self.corr_dict.items():
             for orientation, corr in corrs.items():
                 if orientation == "north":
-                    self.connect_rooms(self.rooms_dict[pos[0] - 1, pos[1]], corr, min_x=corr.min_x, max_x=corr.max_x)
+                    if nodes_map[pos[0] - 1, pos[1]] == 1:
+                        self.connect_rooms(self.rooms_dict[pos[0] - 1, pos[1]], corr, min_x=corr.min_x, max_x=corr.max_x)
+                    else:
+                        self.connect_rooms(self.corr_dict[pos[0] - 1, pos[1]]["south"], corr, min_x=corr.min_x, max_x=corr.max_x)
                 elif orientation == "south":
-                    self.connect_rooms(self.rooms_dict[pos[0] + 1, pos[1]], corr, min_x=corr.min_x, max_x=corr.max_x)
+                    if nodes_map[pos[0] + 1, pos[1]] == 1:
+                        self.connect_rooms(self.rooms_dict[pos[0] + 1, pos[1]], corr, min_x=corr.min_x, max_x=corr.max_x)
+                    else:
+                        self.connect_rooms(self.corr_dict[pos[0] + 1, pos[1]]["north"], corr, min_x=corr.min_x, max_x=corr.max_x)
                 elif orientation == "east":
-                    self.connect_rooms(self.rooms_dict[pos[0], pos[1] + 1], corr, min_z=corr.min_z, max_z=corr.max_z)
+                    if nodes_map[pos[0], pos[1] + 1] == 1:
+                        self.connect_rooms(self.rooms_dict[pos[0], pos[1] + 1], corr, min_z=corr.min_z, max_z=corr.max_z)
+                    else:
+                        self.connect_rooms(self.corr_dict[pos[0], pos[1] + 1]["west"], corr, min_z=corr.min_z, max_z=corr.max_z)
                 else:
-                    self.connect_rooms(self.rooms_dict[pos[0], pos[1] - 1], corr, min_z=corr.min_z, max_z=corr.max_z)
-        """for n in nodes:
-            if nodes_map[n[0], n[1]] == 1:
-                for orientation, c in self.corr_dict[n].items():
-                    self.connect_rooms(self.rooms_dict[n], c, c.min_x, c.max_x)"""
+                    if nodes_map[pos[0], pos[1] - 1] == 1:
+                        self.connect_rooms(self.rooms_dict[pos[0], pos[1] - 1], corr, min_z=corr.min_z, max_z=corr.max_z)
+                    else:
+                        self.connect_rooms(self.corr_dict[pos[0], pos[1] - 1]["east"], corr, min_z=corr.min_z, max_z=corr.max_z)
 
         self.box = self.place_entity(Box(color="red"))
 

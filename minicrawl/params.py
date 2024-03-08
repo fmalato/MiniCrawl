@@ -34,11 +34,10 @@ DEFAULT_DM_PARAMS = dict(
     starting_grid_size=4,
     max_grid_size=None,
     increment_freq=5,
-    connection_density=0.5
+    connection_density=0.75
 )
 
-# TODO: doesn't work for values != 6 and != 3
-DEFAULT_CELL_SIZE = 6
+DEFAULT_CELL_SIZE = 9
 DEFAULT_EDGE_SIZE = 3
 
 DEFAULT_ROOM_PARAMS = dict(

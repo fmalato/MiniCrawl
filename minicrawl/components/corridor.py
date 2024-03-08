@@ -27,24 +27,24 @@ class Corridor(Room):
 
     def _define_outline(self, position, orientation, cell_size, junction_size):
         if orientation == "east":
-            self.min_x = position[1] * cell_size + (3 * junction_size) / 2
+            self.min_x = position[1] * cell_size + junction_size + (cell_size - junction_size) / 2
             self.max_x = (position[1] + 1) * cell_size
-            self.min_z = position[0] * cell_size + (junction_size / 2)
-            self.max_z = position[0] * cell_size + (3 * junction_size) / 2
+            self.min_z = position[0] * cell_size + (cell_size - junction_size) / 2
+            self.max_z = position[0] * cell_size + junction_size + (cell_size - junction_size) / 2
         elif orientation == "north":
-            self.min_x = position[1] * cell_size + (junction_size / 2)
-            self.max_x = position[1] * cell_size + (3 * junction_size) / 2
+            self.min_x = position[1] * cell_size + (cell_size - junction_size) / 2
+            self.max_x = position[1] * cell_size + junction_size + (cell_size - junction_size) / 2
             self.min_z = position[0] * cell_size
-            self.max_z = position[0] * cell_size + (junction_size / 2)
+            self.max_z = position[0] * cell_size + (cell_size - junction_size) / 2
         elif orientation == "west":
             self.min_x = position[1] * cell_size
-            self.max_x = position[1] * cell_size + junction_size / 2
-            self.min_z = position[0] * cell_size + junction_size / 2
-            self.max_z = position[0] * cell_size + (3 * junction_size) / 2
+            self.max_x = position[1] * cell_size + (cell_size - junction_size) / 2
+            self.min_z = position[0] * cell_size + (cell_size - junction_size) / 2
+            self.max_z = position[0] * cell_size + junction_size + (cell_size - junction_size) / 2
         else:
-            self.min_x = position[1] * cell_size + (junction_size / 2)
-            self.max_x = position[1] * cell_size + (3 * junction_size) / 2
-            self.min_z = position[0] * cell_size + (3 * junction_size) / 2
+            self.min_x = position[1] * cell_size + (cell_size - junction_size) / 2
+            self.max_x = position[1] * cell_size + junction_size + (cell_size - junction_size) / 2
+            self.min_z = position[0] * cell_size + junction_size + (cell_size - junction_size) / 2
             self.max_z = (position[0] + 1) * cell_size
 
         outline = np.array([

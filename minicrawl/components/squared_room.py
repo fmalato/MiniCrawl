@@ -28,4 +28,4 @@ class SquaredRoom(Room):
 
 
 if __name__ == '__main__':
-    r = SquaredRoom(position=(0, 0))
+    r = SquaredRoom(position=(0, 2), edge_size=12)

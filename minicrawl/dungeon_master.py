@@ -31,9 +31,10 @@ class DungeonMaster:
         self._grid_graphs = []
         self._connects = {}
         self._current_level = 0
-        self._min_rooms = 4
+        self._min_rooms = self._grid_size
         # Create first floor
         self._create_dungeon_floor()
+        print("Hello")
 
     def _create_dungeon_floor(self):
         """
@@ -45,27 +46,27 @@ class DungeonMaster:
         self._grid[::2, ::2] = 1
         self._grid[1::2, 1::2] = 1
         # TODO: implement later on
-        """# Remove some rooms
-        self._draw_rooms()"""
+        # Remove some rooms
+        self._draw_rooms()
         corridor_trees = []
         self._connects = {}
         corridors = np.argwhere(self._grid == 0)
         for i, j in corridors:
-                connections = self._get_connections(i, j)
-                self._connects[(i, j)] = connections
-                g = Graph(directed=False)
-                g.add_node((i, j))
-                for direction in connections:
-                    if direction == "east":
-                        g.add_egde((i, j), (i, j + 1))
-                    elif direction == "west":
-                        g.add_egde((i, j), (i, j - 1))
-                    elif direction == "north":
-                        g.add_egde((i, j), (i - 1, j))
-                    else:
-                        g.add_egde((i, j), (i + 1, j))
-                if len(g.get_edges((i, j))) > 0:
-                    corridor_trees.append(g)
+            connections = self._get_connections(i, j)
+            self._connects[(i, j)] = connections
+            g = Graph(directed=False)
+            g.add_node((i, j))
+            for direction in connections:
+                if direction == "east":
+                    g.add_egde((i, j), (i, j + 1))
+                elif direction == "west":
+                    g.add_egde((i, j), (i, j - 1))
+                elif direction == "north":
+                    g.add_egde((i, j), (i - 1, j))
+                else:
+                    g.add_egde((i, j), (i + 1, j))
+            if len(g.get_edges((i, j))) > 0:
+                corridor_trees.append(g)
 
         self._build_maze_graph(corridor_trees)
         # Build a map for keeping track of node types
@@ -84,10 +85,25 @@ class DungeonMaster:
 
     def _get_connections(self, row, col):
         neighbors = self._get_neighbors(row, col)
-        connections = []
+        connections = list(neighbors.keys())
+        to_remove = []
+        # TODO: fix corridors logic
+        for c in connections:
+            if np.random.uniform(0, 1) <= 1 - self._density:
+                to_remove.append(c)
+                # General rule: if a previous neighbor (i.e. "north" or "west") have "south" or "east" connection, do not remove "north"/"west" from connections
+                if c == "north" and row > 0 and self._grid[row - 1, col] == 0 and "south" in self._connects[(row - 1, col)]:
+                    to_remove.remove(c)
+                elif c == "west" and col > 0 and self._grid[row, col - 1] == 0 and "east" in self._connects[(row, col - 1)]:
+                    to_remove.remove(c)
+
+        for c in to_remove:
+            connections.remove(c)
+
+        """connections = []
         if np.random.uniform(0, 1) <= self._density:
             num_connections = np.random.randint(2, len(list(neighbors.keys())) + 1)
-            connections = np.random.choice(list(neighbors.keys()), size=num_connections, replace=False)
+            connections = np.random.choice(list(neighbors.keys()), size=num_connections, replace=False)"""
 
         return connections
 
@@ -179,6 +195,9 @@ class DungeonMaster:
 
     def get_current_floor(self):
         return self._maze_graph, self._grid
+
+    def get_connections(self):
+        return self._connects
 
     def get_connections_for_room(self, position):
         return self._connects[position]

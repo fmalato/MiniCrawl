@@ -1,3 +1,4 @@
+from copy import deepcopy
 
 
 class Graph:
@@ -11,7 +12,8 @@ class Graph:
     def add_egde(self, node1, node2):
         self._graph[node1].add(node2)
         if not self._directed:
-            self._graph[node2] = set()
+            if node2 not in self._graph.keys():
+                self._graph[node2] = set()
             self._graph[node2].add(node1)
 
     def remove_node(self, node):
@@ -21,9 +23,12 @@ class Graph:
                 self._graph[k].remove(node)
 
     def remove_edge(self, node1, node2):
-        self._graph[node1].remove(node2)
-        if not self._directed:
-            self._graph[node2].remove(node1)
+        try:
+            self._graph[node1].remove(node2)
+            if not self._directed:
+                self._graph[node2].remove(node1)
+        except KeyError:
+            print("Already removed.")
 
     def find_path(self, node1, node2, path=[]):
         path.append(node1)
@@ -80,6 +85,29 @@ class Graph:
                     queue.append(e)
                     visited[e] = True
 
+    def minimum_spanning_tree(self, node, replace=False):
+        mst = deepcopy(self._graph)
+        visited = {}
+        for k in self._graph.keys():
+            visited[k] = False
+
+        queue = [node]
+        visited[node] = True
+
+        while queue:
+            n = queue.pop(0)
+            for e in self._graph[n]:
+                if not visited[e]:
+                    queue.append(e)
+                    visited[e] = True
+                else:
+                    mst[n].remove(e)
+
+        if replace:
+            self._graph = mst
+
+        return mst
+
     def connected_components(self):
         # Initialization
         visited = {}
@@ -129,9 +157,21 @@ class Graph:
                 self._graph.pop(e)
             self._graph.pop(comp2[0])
 
+        self._turn_to_directed()
+
     @staticmethod
     def _get_manhattan_neighbors(node):
         return [(node[0] - 1, node[1]), (node[0] + 1, node[1]), (node[0], node[1] - 1), (node[0], node[1] + 1)]
+
+    def _turn_to_directed(self):
+        visited = []
+        for n in self._graph.keys():
+            visited.append(n)
+            for e in self._graph[n]:
+                try:
+                    self._graph[e].remove(n)
+                except Exception:
+                    continue
 
 
 if __name__ == '__main__':

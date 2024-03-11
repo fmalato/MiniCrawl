@@ -2,6 +2,7 @@ import numpy as np
 
 from minicrawl.params import ObjectIndices
 from minicrawl.graph import Graph
+from minicrawl.utils import minimum_spanning_tree
 
 
 class DungeonMaster:
@@ -34,7 +35,6 @@ class DungeonMaster:
         self._min_rooms = self._grid_size
         # Create first floor
         self._create_dungeon_floor()
-        print("Hello")
 
     def _create_dungeon_floor(self):
         """
@@ -52,11 +52,13 @@ class DungeonMaster:
         self._connects = {}
         corridors = np.argwhere(self._grid == 0)
         for i, j in corridors:
-            connections = self._get_connections(i, j)
+            connections = self._get_neighbors(i, j)
             self._connects[(i, j)] = connections
-            g = Graph(directed=False)
+        for i, j in corridors:
+            self._get_connections(i, j)
+            """g = Graph(directed=False)
             g.add_node((i, j))
-            for direction in connections:
+            for direction in self._connects[(i, j)].keys():
                 if direction == "east":
                     g.add_egde((i, j), (i, j + 1))
                 elif direction == "west":
@@ -66,13 +68,15 @@ class DungeonMaster:
                 else:
                     g.add_egde((i, j), (i + 1, j))
             if len(g.get_edges((i, j))) > 0:
-                corridor_trees.append(g)
+                corridor_trees.append(g)"""
 
-        self._build_maze_graph(corridor_trees)
+        self._build_maze_graph_new()
         # Build a map for keeping track of node types
         for n in self._maze_graph.get_nodes():
             if self._grid[int(n[0]), int(n[1])] == 0:
                 self._grid[int(n[0]), int(n[1])] = 2
+
+        print("Hello")
 
     def _draw_rooms(self):
         num_rooms = int(np.sum(self._grid))
@@ -84,28 +88,30 @@ class DungeonMaster:
                     self._grid[i, j] = obj
 
     def _get_connections(self, row, col):
-        neighbors = self._get_neighbors(row, col)
-        connections = list(neighbors.keys())
+        corr_keys = list(self._connects[(row, col)].keys())
         to_remove = []
-        # TODO: fix corridors logic
-        for c in connections:
-            if np.random.uniform(0, 1) <= 1 - self._density:
+        for c in corr_keys:
+            # If a corridor is connected to another corridor, and we sample this to be removed
+            if self._connects[(row, col)][c] == 0 and np.random.uniform(0, 1) <= 1 - self._density:
                 to_remove.append(c)
-                # General rule: if a previous neighbor (i.e. "north" or "west") have "south" or "east" connection, do not remove "north"/"west" from connections
-                if c == "north" and row > 0 and self._grid[row - 1, col] == 0 and "south" in self._connects[(row - 1, col)]:
-                    to_remove.remove(c)
-                elif c == "west" and col > 0 and self._grid[row, col - 1] == 0 and "east" in self._connects[(row, col - 1)]:
-                    to_remove.remove(c)
+                try:
+                    if c == "east":
+                        self._connects[(row, col + 1)].pop("west")
+                    elif c == "west":
+                        self._connects[(row, col - 1)].pop("east")
+                    elif c == "north":
+                        self._connects[(row - 1, col)].pop("south")
+                    else:
+                        self._connects[(row + 1, col)].pop("north")
+                except KeyError:
+                    print(f"Neighbor not found. Skipping.")
 
-        for c in to_remove:
-            connections.remove(c)
+        """# v0.1: If corridor is a dead end, remove
+        if len(list(self._connects[(row, col)].keys())) == 1 and list(self._connects[(row, col)].keys())[0] not in to_remove:
+            to_remove.append(list(self._connects[(row, col)].keys())[0])"""
 
-        """connections = []
-        if np.random.uniform(0, 1) <= self._density:
-            num_connections = np.random.randint(2, len(list(neighbors.keys())) + 1)
-            connections = np.random.choice(list(neighbors.keys()), size=num_connections, replace=False)"""
-
-        return connections
+        for r in to_remove:
+            self._connects[(row, col)].pop(r)
 
     def _get_neighbors(self, row, col):
         """
@@ -163,14 +169,45 @@ class DungeonMaster:
             for e in self._maze_graph.get_edges(n):
                 if e not in self._maze_graph.get_nodes():
                     self._maze_graph.add_node(e)
-        # Step 3: Compute connected components, in case there's more than one
+        """# Step 3: Compute connected components, in case there's more than one
         connected_components = self._maze_graph.connected_components()
         # Heuristic: if more than one component, try to connect them
         if len(connected_components) > 1:
             biggest = connected_components[np.argmax([len(x) for x in connected_components])]
             connected_components.remove(biggest)
             for comp in connected_components:
-                self._maze_graph.connect_components(biggest, comp)
+                self._maze_graph.connect_components(biggest, comp)"""
+        mst = self._maze_graph.minimum_spanning_tree(self._maze_graph.get_nodes()[0])
+        print("Hello")
+
+    def _build_maze_graph_new(self):
+        # Step 1: Build graph with current connections
+        self._maze_graph = Graph(directed=False)
+        for i, j in np.ndindex(self._grid.shape):
+            try:
+                if (i, j) not in self._maze_graph.get_nodes():
+                    self._maze_graph.add_node((i, j))
+                for k in self._connects[(i, j)].keys():
+                    if k == "east":
+                        self._maze_graph.add_egde((i, j), (i, j + 1))
+                    elif k == "west":
+                        self._maze_graph.add_egde((i, j), (i, j - 1))
+                    elif k == "north":
+                        self._maze_graph.add_egde((i, j), (i - 1, j))
+                    else:
+                        self._maze_graph.add_egde((i, j), (i + 1, j))
+            except KeyError:
+                continue
+        # Step 2: build minimum spanning tree starting from a random node
+        nodes = self._maze_graph.get_nodes()
+        node_idx = np.random.randint(len(nodes))
+        # TODO: wrong
+        mst = minimum_spanning_tree(self._maze_graph, nodes[node_idx])
+        print("Hello")
+        # Step 3: build some edges back
+        """num_back_edges = np.random.randint(0, 10)
+        for i in range(num_back_edges):"""
+
 
     def get_current_level(self):
         return self._current_level

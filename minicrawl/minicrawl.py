@@ -98,14 +98,17 @@ class MiniCrawlEnv(MiniWorldEnv):
     def _gen_world(self):
         # TODO: sometimes the goal does not spawn inside the floor (connected components?)
         floor_graph, nodes_map = self._dungeon_master.get_current_floor()
-        nodes = floor_graph.get_nodes()
-        for n in nodes:
-            if nodes_map[n[0], n[1]] == 1:
-                room = self.add_room(position=n)
-            elif nodes_map[n[0], n[1]] == 2:
-                room = self.add_junction(position=n)
-                for orientation in self._dungeon_master.get_connections_for_room(n):
-                    corr = self.add_corridor(position=n, orientation=orientation)
+        # Build rooms
+        for i, j in np.ndindex(nodes_map.shape):
+            if nodes_map[i, j] == 1:
+                room = self.add_room(position=(i, j))
+        # Build corridors
+        for i, j in np.ndindex(nodes_map.shape):
+            if nodes_map[i, j] == 2:
+                room = self.add_junction(position=(i, j))
+                # Connect corridors with generating junction
+                for orientation in self._dungeon_master.get_connections_for_room((i, j)):
+                    corr = self.add_corridor(position=(i, j), orientation=orientation)
                     if orientation in ["north", "south"]:
                         self.connect_rooms(room, corr, min_x=corr.min_x, max_x=corr.max_x)
                     else:
@@ -117,22 +120,22 @@ class MiniCrawlEnv(MiniWorldEnv):
                 if orientation == "north":
                     if nodes_map[pos[0] - 1, pos[1]] == 1:
                         self.connect_rooms(self.rooms_dict[pos[0] - 1, pos[1]], corr, min_x=corr.min_x, max_x=corr.max_x)
-                    else:
+                    elif nodes_map[pos[0] - 1, pos[1]] == 2:
                         self.connect_rooms(self.corr_dict[pos[0] - 1, pos[1]]["south"], corr, min_x=corr.min_x, max_x=corr.max_x)
                 elif orientation == "south":
                     if nodes_map[pos[0] + 1, pos[1]] == 1:
                         self.connect_rooms(self.rooms_dict[pos[0] + 1, pos[1]], corr, min_x=corr.min_x, max_x=corr.max_x)
-                    else:
+                    elif nodes_map[pos[0] + 1, pos[1]] == 2:
                         self.connect_rooms(self.corr_dict[pos[0] + 1, pos[1]]["north"], corr, min_x=corr.min_x, max_x=corr.max_x)
                 elif orientation == "east":
                     if nodes_map[pos[0], pos[1] + 1] == 1:
                         self.connect_rooms(self.rooms_dict[pos[0], pos[1] + 1], corr, min_z=corr.min_z, max_z=corr.max_z)
-                    else:
+                    elif nodes_map[pos[0], pos[1] + 1] == 2:
                         self.connect_rooms(self.corr_dict[pos[0], pos[1] + 1]["west"], corr, min_z=corr.min_z, max_z=corr.max_z)
                 else:
                     if nodes_map[pos[0], pos[1] - 1] == 1:
                         self.connect_rooms(self.rooms_dict[pos[0], pos[1] - 1], corr, min_z=corr.min_z, max_z=corr.max_z)
-                    else:
+                    elif nodes_map[pos[0], pos[1] - 1] == 2:
                         self.connect_rooms(self.corr_dict[pos[0], pos[1] - 1]["east"], corr, min_z=corr.min_z, max_z=corr.max_z)
 
         self.box = self.place_entity(Box(color="red"))

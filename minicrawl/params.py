@@ -13,7 +13,7 @@ DEFAULT_PARAMS.set(
 DEFAULT_PARAMS.set("obj_color_bias", [0, 0, 0], [-0.2, -0.2, -0.2], [0.2, 0.2, 0.2])
 DEFAULT_PARAMS.set("forward_step", 0.15, 0.15, 0.15)
 DEFAULT_PARAMS.set("forward_drift", 0, -0.05, 0.05)
-DEFAULT_PARAMS.set("turn_step", 5, 5, 5)
+DEFAULT_PARAMS.set("turn_step", 3, 3, 3)
 DEFAULT_PARAMS.set("bot_radius", 0.4, 0.38, 0.42)
 DEFAULT_PARAMS.set("cam_pitch", 0, -5, 5)
 DEFAULT_PARAMS.set("cam_fov_y", 60, 55, 65)
@@ -31,7 +31,7 @@ class ObjectIndices(IntEnum):
 
 
 DEFAULT_DM_PARAMS = dict(
-    starting_grid_size=4,
+    starting_grid_size=3,
     max_grid_size=None,
     increment_freq=5,
     connection_density=0.75

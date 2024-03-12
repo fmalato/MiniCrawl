@@ -5,13 +5,12 @@ import pyglet.text
 from gymnasium.core import ObsType
 from miniworld.miniworld import MiniWorldEnv
 from miniworld.entity import Box
-from miniworld.params import DEFAULT_PARAMS
 
 from minicrawl.dungeon_master import DungeonMaster
 from minicrawl.components.squared_room import SquaredRoom
 from minicrawl.components.corridor import Corridor
 from minicrawl.components.junction import JunctionRoom
-from minicrawl.params import DEFAULT_DM_PARAMS, DEFAULT_ROOM_PARAMS, DEFAULT_JUNCTION_PARAMS, DEFAULT_CORRIDOR_PARAMS
+from minicrawl.params import DEFAULT_PARAMS, DEFAULT_DM_PARAMS, DEFAULT_ROOM_PARAMS, DEFAULT_JUNCTION_PARAMS, DEFAULT_CORRIDOR_PARAMS
 
 
 class MiniCrawlEnv(MiniWorldEnv):
@@ -42,6 +41,7 @@ class MiniCrawlEnv(MiniWorldEnv):
                          render_mode, view)
         self.rooms_dict = {}
         self.corr_dict = {}
+        self.stairs = None
         self.level_label = pyglet.text.Label(
             font_name="Arial",
             font_size=14,
@@ -52,7 +52,12 @@ class MiniCrawlEnv(MiniWorldEnv):
         )
 
     def step(self, action):
-        return super().step(action)
+        obs, reward, terminated, truncated, info = super().step(action)
+        if self.near(self.stairs):
+            reward += self._reward()
+            terminated = True
+
+        return obs, reward, terminated, truncated, info
 
     def reset(
         self, *, seed: Optional[int] = None, options: Optional[dict] = None
@@ -153,6 +158,6 @@ class MiniCrawlEnv(MiniWorldEnv):
                         corr2 = self.corr_dict[i, j + 1]["west"]
                         self.connect_rooms(corr1, corr2, min_z=corr1.min_z, max_z=corr1.max_z)
 
-        self.box = self.place_entity(Box(color="red"))
+        self.stairs = self.place_entity(Box(color="red"))
 
         self.place_agent()

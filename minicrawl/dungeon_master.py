@@ -1,6 +1,5 @@
 import numpy as np
 
-from minicrawl.params import ObjectIndices
 from minicrawl.graph import Graph
 from minicrawl.utils import minimum_spanning_tree
 
@@ -23,7 +22,6 @@ class DungeonMaster:
             assert max_grid_size > starting_grid_size, "max_grid_size must be greater than starting_grid_size"
         # Initialize attributes
         self._density = connection_density
-        self._available_components = len(ObjectIndices)
         self._grid_size = starting_grid_size
         self._starting_grid_size = starting_grid_size
         self._max_grid_size = max_grid_size
@@ -33,8 +31,6 @@ class DungeonMaster:
         self._connects = {}
         self._current_level = 0
         self._min_rooms = self._grid_size
-        # Create first floor
-        #self._create_dungeon_floor()
 
     def _create_dungeon_floor(self):
         """
@@ -45,7 +41,6 @@ class DungeonMaster:
         self._grid = np.zeros(shape=(current_grid_size, current_grid_size))
         self._grid[::2, ::2] = 1
         self._grid[1::2, 1::2] = 1
-        # TODO: implement later on
         # Remove some rooms
         self._draw_rooms()
         connects = {}

@@ -21,17 +21,8 @@ DEFAULT_PARAMS.set("cam_height", 1.5, 1.45, 1.55)
 DEFAULT_PARAMS.set("cam_fwd_disp", 0, -0.05, 0.10)
 
 
-class ObjectIndices(IntEnum):
-    EMPTY = 0
-    ROOM = 1
-    CORRIDOR = 2
-    ANGLE_JUNCTION = 3
-    T_JUNCTION = 4
-    CROSS_JUNCTION = 5
-
-
 DEFAULT_DM_PARAMS = dict(
-    starting_grid_size=7,
+    starting_grid_size=3,
     max_grid_size=None,
     increment_freq=5,
     connection_density=0.75
@@ -43,9 +34,9 @@ DEFAULT_EDGE_SIZE = 3
 DEFAULT_ROOM_PARAMS = dict(
     edge_size=DEFAULT_CELL_SIZE,
     wall_height=2.74,
-    floor_tex="floor_tiles_bw",
-    wall_tex="concrete",
-    ceil_text="concrete_tiles",
+    floor_tex="wood_planks",
+    wall_tex="cinder_blocks",
+    ceil_text="rock",
     no_ceiling=False
 )
 
@@ -53,9 +44,9 @@ DEFAULT_JUNCTION_PARAMS = dict(
     cell_size=DEFAULT_CELL_SIZE,
     edge_size=DEFAULT_EDGE_SIZE,
     wall_height=2.74,
-    floor_tex="floor_tiles_bw",
-    wall_tex="concrete",
-    ceil_text="concrete_tiles",
+    floor_tex="wood_planks",
+    wall_tex="cinder_blocks",
+    ceil_text="rock",
     no_ceiling=False
 )
 
@@ -63,8 +54,8 @@ DEFAULT_CORRIDOR_PARAMS = dict(
     cell_size=DEFAULT_CELL_SIZE,
     junction_size=DEFAULT_EDGE_SIZE,
     wall_height=2.74,
-    floor_tex="floor_tiles_bw",
-    wall_tex="concrete",
-    ceil_text="concrete_tiles",
+    floor_tex="wood_planks",
+    wall_tex="cinder_blocks",
+    ceil_text="rock",
     no_ceiling=False
 )

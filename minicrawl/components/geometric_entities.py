@@ -1,7 +1,7 @@
 import numpy as np
 import math
 
-from miniworld.entity import Entity, COLORS
+from miniworld.entity import Entity, MeshEnt, COLORS
 from pyglet.gl import (
     GL_TEXTURE_2D,
     glColor3f,
@@ -15,13 +15,14 @@ from pyglet.gl import (
 from miniworld.opengl import drawBox
 
 
-class Stairs(Entity):
+class Stairs(MeshEnt):
     """
     Stairs object to pass from one level to the other
     """
 
     def __init__(self, color, size=1.5):
-        super().__init__()
+        # TODO: absolute path is set to be miniworld/meshes
+        super().__init__(height=0.05, mesh_name="stairs_down", static=True)
 
         if type(size) is int or type(size) is float:
             size = np.array([size, size])

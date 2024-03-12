@@ -115,28 +115,43 @@ class MiniCrawlEnv(MiniWorldEnv):
                         self.connect_rooms(room, corr, min_z=corr.min_z, max_z=corr.max_z)
 
         # Connect rooms with corridors
-        for pos, corrs in self.corr_dict.items():
-            for orientation, corr in corrs.items():
-                if orientation == "north":
-                    if nodes_map[pos[0] - 1, pos[1]] == 1:
-                        self.connect_rooms(self.rooms_dict[pos[0] - 1, pos[1]], corr, min_x=corr.min_x, max_x=corr.max_x)
-                    elif nodes_map[pos[0] - 1, pos[1]] == 2:
-                        self.connect_rooms(self.corr_dict[pos[0] - 1, pos[1]]["south"], corr, min_x=corr.min_x, max_x=corr.max_x)
-                elif orientation == "south":
-                    if nodes_map[pos[0] + 1, pos[1]] == 1:
-                        self.connect_rooms(self.rooms_dict[pos[0] + 1, pos[1]], corr, min_x=corr.min_x, max_x=corr.max_x)
-                    elif nodes_map[pos[0] + 1, pos[1]] == 2:
-                        self.connect_rooms(self.corr_dict[pos[0] + 1, pos[1]]["north"], corr, min_x=corr.min_x, max_x=corr.max_x)
+        for i, j in np.ndindex(nodes_map.shape):
+            current_object_type = nodes_map[i, j]
+            connections = self._dungeon_master.get_connections_for_room((i, j))
+            # TODO: reformat code
+            for orientation, object_type in connections.items():
+                if orientation == "south":
+                    # If room, neighbors are only corridors
+                    if current_object_type == 1:
+                        room = self.rooms_dict[i, j]
+                        corr = self.corr_dict[i + 1, j]["north"]
+                        self.connect_rooms(room, corr, min_x=corr.min_x, max_x=corr.max_x)
+                    # Connect corridor to room
+                    elif current_object_type == 2 and object_type == 1:
+                        corr = self.corr_dict[i, j][orientation]
+                        room = self.rooms_dict[i + 1, j]
+                        self.connect_rooms(corr, room, min_x=corr.min_x, max_x=corr.max_x)
+                    # Connect corridor to corridor
+                    elif current_object_type == 2 and object_type == 2:
+                        corr1 = self.corr_dict[i, j][orientation]
+                        corr2 = self.corr_dict[i + 1, j]["north"]
+                        self.connect_rooms(corr1, corr2, min_x=corr1.min_x, max_x=corr1.max_x)
                 elif orientation == "east":
-                    if nodes_map[pos[0], pos[1] + 1] == 1:
-                        self.connect_rooms(self.rooms_dict[pos[0], pos[1] + 1], corr, min_z=corr.min_z, max_z=corr.max_z)
-                    elif nodes_map[pos[0], pos[1] + 1] == 2:
-                        self.connect_rooms(self.corr_dict[pos[0], pos[1] + 1]["west"], corr, min_z=corr.min_z, max_z=corr.max_z)
-                else:
-                    if nodes_map[pos[0], pos[1] - 1] == 1:
-                        self.connect_rooms(self.rooms_dict[pos[0], pos[1] - 1], corr, min_z=corr.min_z, max_z=corr.max_z)
-                    elif nodes_map[pos[0], pos[1] - 1] == 2:
-                        self.connect_rooms(self.corr_dict[pos[0], pos[1] - 1]["east"], corr, min_z=corr.min_z, max_z=corr.max_z)
+                    # If room, neighbors are only corridors
+                    if current_object_type == 1:
+                        room = self.rooms_dict[i, j]
+                        corr = self.corr_dict[i, j + 1]["west"]
+                        self.connect_rooms(room, corr, min_z=corr.min_z, max_z=corr.max_z)
+                    # Connect corridor to room
+                    elif current_object_type == 2 and object_type == 1:
+                        corr = self.corr_dict[i, j][orientation]
+                        room = self.rooms_dict[i, j + 1]
+                        self.connect_rooms(corr, room, min_z=corr.min_z, max_z=corr.max_z)
+                    # Connect corridor to corridor
+                    elif current_object_type == 2 and object_type == 2:
+                        corr1 = self.corr_dict[i, j][orientation]
+                        corr2 = self.corr_dict[i, j + 1]["west"]
+                        self.connect_rooms(corr1, corr2, min_z=corr1.min_z, max_z=corr1.max_z)
 
         self.box = self.place_entity(Box(color="red"))
 

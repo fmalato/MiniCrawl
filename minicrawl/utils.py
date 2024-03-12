@@ -4,9 +4,10 @@ from minicrawl.graph import Graph
 
 
 def minimum_spanning_tree(graph, node):
-    mst = deepcopy(graph)
+    mst = Graph(directed=False)
     visited = {}
     for k in graph.get_nodes():
+        mst.add_node(k)
         visited[k] = False
 
     queue = [node]
@@ -18,7 +19,6 @@ def minimum_spanning_tree(graph, node):
             if not visited[e]:
                 queue.append(e)
                 visited[e] = True
-            else:
-                mst.remove_edge(n, e)
+                mst.add_egde(n, e)
 
     return mst

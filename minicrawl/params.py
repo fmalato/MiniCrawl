@@ -31,7 +31,7 @@ class ObjectIndices(IntEnum):
 
 
 DEFAULT_DM_PARAMS = dict(
-    starting_grid_size=3,
+    starting_grid_size=7,
     max_grid_size=None,
     increment_freq=5,
     connection_density=0.75

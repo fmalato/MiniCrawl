@@ -3,7 +3,6 @@ import gymnasium as gym
 
 import matplotlib.pyplot as plt
 
-from minicrawl.envs.testdungeon import TestDungeon
 from minicrawl.controller import BaseController
 
 

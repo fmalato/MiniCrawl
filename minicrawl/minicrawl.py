@@ -10,6 +10,7 @@ from minicrawl.dungeon_master import DungeonMaster
 from minicrawl.components.squared_room import SquaredRoom
 from minicrawl.components.corridor import Corridor
 from minicrawl.components.junction import JunctionRoom
+from minicrawl.components.geometric_entities import Stairs
 from minicrawl.params import DEFAULT_PARAMS, DEFAULT_DM_PARAMS, DEFAULT_ROOM_PARAMS, DEFAULT_JUNCTION_PARAMS, DEFAULT_CORRIDOR_PARAMS
 
 
@@ -158,6 +159,6 @@ class MiniCrawlEnv(MiniWorldEnv):
                         corr2 = self.corr_dict[i, j + 1]["west"]
                         self.connect_rooms(corr1, corr2, min_z=corr1.min_z, max_z=corr1.max_z)
 
-        self.stairs = self.place_entity(Box(color="red"))
+        self.stairs = self.place_entity(Stairs(color="red"))
 
         self.place_agent()

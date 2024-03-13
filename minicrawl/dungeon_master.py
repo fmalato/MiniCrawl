@@ -32,6 +32,8 @@ class DungeonMaster:
         self._current_level = 0
         self._min_rooms = self._grid_size
 
+        self._create_dungeon_floor()
+
     def _create_dungeon_floor(self):
         """
             Creates a random floor plan of size (self._grid_size, self._grid_size)

@@ -12,7 +12,8 @@ if __name__ == '__main__':
     obs, _ = env.reset(seed=np.random.randint(1, 100000))
     get_map = True
     terminated = False
-    while not terminated:
+    truncated = False
+    while not truncated:
         action = controller.wait_press()
         obs, reward, terminated, truncated, info = env.step(action)
         env.render()
@@ -20,3 +21,6 @@ if __name__ == '__main__':
             map_array = env.render_top_view()
             plt.imsave("floor_map.png", map_array)
             get_map = False
+        if terminated:
+            obs, info = env.env.env.next_level()
+            get_map = True

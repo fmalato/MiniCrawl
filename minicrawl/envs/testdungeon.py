@@ -4,7 +4,7 @@ from gymnasium import spaces
 from miniworld.miniworld import MiniWorldEnv
 from miniworld.entity import Box
 
-from ..params import DEFAULT_PARAMS
+from minicrawl.params import DEFAULT_PARAMS
 
 
 class TestDungeon(MiniWorldEnv):

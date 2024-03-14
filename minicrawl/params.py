@@ -1,5 +1,7 @@
 from miniworld.params import DomainParams
-from enum import IntEnum
+from enum import Enum
+
+import numpy as np
 
 
 # Default simulation parameters
@@ -24,7 +26,7 @@ DEFAULT_PARAMS.set("cam_fwd_disp", 0, -0.05, 0.10)
 DEFAULT_DM_PARAMS = dict(
     starting_grid_size=3,
     max_grid_size=None,
-    increment_freq=5,
+    increment_freq=2,
     connection_density=0.75
 )
 
@@ -59,3 +61,21 @@ DEFAULT_CORRIDOR_PARAMS = dict(
     ceil_text="rock",
     no_ceiling=False
 )
+
+
+# TODO: find better struct
+COLORS = dict(
+    BROWN=np.array([123, 63, 0], dtype=np.uint8),
+    GREY=np.array([128, 128, 128], dtype=np.uint8),
+    RED=np.array([255, 0, 0], dtype=np.uint8),
+    YELLOW=np.array([255, 255, 0], dtype=np.uint8)
+)
+
+# TODO: design more
+BOSS_STAGES = [
+    "put_next"
+]
+
+ENV_NAMES = {
+    "dungeon_floor": "MiniCrawl-DungeonFloorEnv-v0"
+}

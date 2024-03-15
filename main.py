@@ -1,14 +1,15 @@
 import numpy as np
 import gymnasium as gym
 
-import matplotlib.pyplot as plt
-
 from minicrawl.controller import BaseController
 
 
 if __name__ == '__main__':
     controller = BaseController()
-    env = gym.make("MiniCrawl-FloorDungeon-v0", render_mode="human", render_map=True)
+    # V1
+    #env = gym.make("MiniCrawl-FloorDungeon-v0", render_mode="human")
+    # V2
+    env = gym.make("MiniCrawl-DungeonMasterEnv-v0", render_mode="human", render_map=True, enlarge_freq=2)
     obs, _ = env.reset(seed=np.random.randint(1, 100000))
     terminated = False
     truncated = False

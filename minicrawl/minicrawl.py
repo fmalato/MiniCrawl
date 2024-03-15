@@ -12,9 +12,7 @@ from miniworld.miniworld import MiniWorldEnv
 from miniworld.entity import Key, Box, TextFrame
 
 from minicrawl.dungeon_master import DungeonMaster
-from minicrawl.components.squared_room import SquaredRoom
-from minicrawl.components.corridor import Corridor
-from minicrawl.components.junction import JunctionRoom
+from minicrawl.components.rooms import SquaredRoom, JunctionRoom, Corridor
 from minicrawl.components.geometric_entities import Stairs, Stairs2D
 from minicrawl.params import (DEFAULT_PARAMS, DEFAULT_DM_PARAMS, DEFAULT_ROOM_PARAMS, DEFAULT_JUNCTION_PARAMS,
                               DEFAULT_CORRIDOR_PARAMS, ENV_NAMES)

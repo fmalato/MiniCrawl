@@ -5,11 +5,8 @@ from gymnasium.core import ObsType
 from miniworld.entity import Key
 
 from minicrawl.minicrawl import MiniCrawlEnv
-from minicrawl.dungeon_master import DungeonMaster
-# TODO: maybe reunite in components.py file?
-from minicrawl.components.squared_room import SquaredRoom
-from minicrawl.components.junction import JunctionRoom
-from minicrawl.components.corridor import Corridor
+
+from minicrawl.components.rooms import SquaredRoom, JunctionRoom, Corridor
 
 
 class DungeonFloorEnv(MiniCrawlEnv):
@@ -20,18 +17,18 @@ class DungeonFloorEnv(MiniCrawlEnv):
             connections,
             stairs_room,
             agent_room,
+            render_mode="human",
             **kwargs
     ):
-        super().__init__(**kwargs)
         self.floor_graph = floor_graph
         self.nodes_map = nodes_map
         self.connections = connections
         self.stairs_room = stairs_room
         self.agent_room = agent_room
+        super().__init__(render_mode=render_mode, **kwargs)
 
     def step(self, action):
         obs, reward, terminated, truncated, info = super().step(action)
-        # TODO: This won't scale well. Re-design levels hierarchy.
         if self.near(self.stairs):
             reward += self._reward()
             terminated = True
@@ -48,7 +45,10 @@ class DungeonFloorEnv(MiniCrawlEnv):
         obs, info = super().reset()
 
         return obs, info
-
+    
+    def render(self):
+        return super().render()
+    
     def _gen_world(self):
         # Build rooms
         for i, j in np.ndindex(self.nodes_map.shape):
@@ -70,7 +70,7 @@ class DungeonFloorEnv(MiniCrawlEnv):
         for i, j in np.ndindex(self.nodes_map.shape):
             current_object_type = self.nodes_map[i, j]
             # TODO: reformat code
-            for orientation, object_type in self.connections.items():
+            for orientation, object_type in self.connections[(i, j)].items():
                 if orientation == "south":
                     # If room, neighbors are only corridors
                     if current_object_type == 1:

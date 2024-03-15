@@ -261,10 +261,12 @@ class DungeonMaster:
         return floor_map
 
 
-class DungeonMasterV2(gym.Env):
+class DungeonMasterEnv(gym.Env):
     def __init__(self, max_episode_steps=2000, starting_grid_size=3, max_grid_size=None, enlarge_freq=5,
                  render_map=False, **kwargs):
-        super().__init__(max_episode_steps=max_episode_steps, **kwargs)
+        super().__init__()
+        self.action_space = gym.spaces.Discrete(n=6)
+        self.observation_space = gym.spaces.Box(low=0, high=255, shape=(60, 80, 3), dtype=np.uint8)
 
         self.env = None
         self.max_episode_steps = max_episode_steps
@@ -303,10 +305,15 @@ class DungeonMasterV2(gym.Env):
             nodes_map=self._grid,
             connections=self._connects,
             stairs_room=stairs_room,
-            agent_room=agent_room
+            agent_room=agent_room,
+            render_mode="human",
+            render_map=self.render_map
         )
 
         return self.env.reset()
+
+    def render(self):
+        return self.env.render()
 
     def next_level(self, env_seed: int = None):
         self.current_level += 1
@@ -316,6 +323,7 @@ class DungeonMasterV2(gym.Env):
         )
         if self.current_level % self.enlarge_frequency == 0 and self.current_level != 0:
             self.grid_size += 1
+        # TODO: env closes at the end of every level
         self.env.close()
         if level_type == "dungeon_floor":
             self._create_dungeon_floor()
@@ -327,13 +335,16 @@ class DungeonMasterV2(gym.Env):
                 nodes_map=self._grid,
                 connections=self._connects,
                 stairs_room=stairs_room,
-                agent_room=agent_room
+                agent_room=agent_room,
+                render_mode="human",
+                view="agent",
+                render_map=self.render_map
             )
         elif level_type == "put_next_boss_stage":
             self.env = gym.make(
-                id="MiniCrawl-PutNextBossStage-v0",
+                id="MiniCrawl-PutNextBossStageEnv-v0",
                 max_episode_steps=self.max_episode_steps,
-                room_size=15
+                room_size=12
             )
 
         return self.env.reset(seed=env_seed, options=options)

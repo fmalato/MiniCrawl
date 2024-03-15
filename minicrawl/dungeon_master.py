@@ -68,6 +68,11 @@ class DungeonMaster:
         for i, j in np.ndindex(self._grid.shape):
             self._get_connections(i, j)
 
+    def create_dungeon_floor(self):
+        self._create_dungeon_floor()
+
+        return self._maze_graph, self._grid, self._connects
+
     def _draw_rooms(self):
         rooms = np.argwhere(self._grid == 1)
         num_rooms = int(np.sum(self._grid))
@@ -204,6 +209,25 @@ class DungeonMaster:
 
         return stairs_room, agent_room
 
+    def choose_goal_position(self):
+        if self._current_level % self._increment_freq == 0 and self._current_level != 0:
+            return (0, 0)
+        else:
+            rooms_names = list(np.argwhere(self._grid == 1))
+            stairs_room_idx = np.random.randint(0, len(rooms_names))
+            stairs_room = tuple(rooms_names[stairs_room_idx])
+
+        return stairs_room
+
+    def choose_agent_position(self, level_name):
+        if level_name != "dungeon_floor":
+            return (0, 0)
+        rooms_names = list(np.argwhere(self._grid == 1))
+        agent_room_idx = np.random.randint(0, len(rooms_names))
+        agent_room = tuple(rooms_names[agent_room_idx])
+
+        return agent_room
+
     def build_floor_map(self, agent_pos, agent_dir, goal_pos):
         # TODO: grid_size >= 9 is confusing
         cell_px_size = int(80 / self._grid_size)
@@ -259,217 +283,3 @@ class DungeonMaster:
         floor_map[goal_pos_y - 1: goal_pos_y + 2, goal_pos_x - 1: goal_pos_x + 2, :] = COLORS["YELLOW"]
 
         return floor_map
-
-
-class DungeonMasterEnv(gym.Env):
-    def __init__(self, max_episode_steps=2000, starting_grid_size=3, max_grid_size=None, enlarge_freq=5,
-                 render_map=False, **kwargs):
-        super().__init__()
-        self.action_space = gym.spaces.Discrete(n=6)
-        self.observation_space = gym.spaces.Box(low=0, high=255, shape=(60, 80, 3), dtype=np.uint8)
-
-        self.env = None
-        self.max_episode_steps = max_episode_steps
-        self.min_rooms = 3
-        self.starting_grid_size = starting_grid_size
-        self.max_grid_size = max_grid_size
-        self.enlarge_frequency = enlarge_freq
-        self.render_map = render_map
-
-        self.current_level = 0
-        self.grid_size = self.starting_grid_size
-
-        self._grid = None
-        self._connects = {}
-        self._maze_graph = None
-
-    def step(self, action):
-        return self.env.step(action)
-
-    def reset(self, seed: int = None, **kwargs):
-        self.current_level = 0
-        self.grid_size = self.starting_grid_size
-        self._grid = np.zeros(shape=(self.grid_size, self.grid_size))
-        self._connects = {}
-        self._maze_graph = None
-
-        self._create_dungeon_floor()
-        stairs_room, agent_room = self.choose_goal_and_agent_positions()
-        # If previous level is instantiated, remove it and avoid memory consumption
-        if self.env is not None:
-            self.env.close()
-        self.env = gym.make(
-            id="MiniCrawl-DungeonFloorEnv-v0",
-            max_episode_steps=self.max_episode_steps,
-            floor_graph=self._maze_graph,
-            nodes_map=self._grid,
-            connections=self._connects,
-            stairs_room=stairs_room,
-            agent_room=agent_room,
-            render_mode="human",
-            render_map=self.render_map
-        )
-
-        return self.env.reset()
-
-    def render(self):
-        return self.env.render()
-
-    def next_level(self, env_seed: int = None):
-        self.current_level += 1
-        level_type = self._select_level_type()
-        options = dict(
-            level_type=level_type
-        )
-        if self.current_level % self.enlarge_frequency == 0 and self.current_level != 0:
-            self.grid_size += 1
-        # TODO: env closes at the end of every level
-        self.env.close()
-        if level_type == "dungeon_floor":
-            self._create_dungeon_floor()
-            stairs_room, agent_room = self.choose_goal_and_agent_positions()
-            self.env = gym.make(
-                id="MiniCrawl-DungeonFloorEnv-v0",
-                max_episode_steps=self.max_episode_steps,
-                floor_graph=self._maze_graph,
-                nodes_map=self._grid,
-                connections=self._connects,
-                stairs_room=stairs_room,
-                agent_room=agent_room,
-                render_mode="human",
-                view="agent",
-                render_map=self.render_map
-            )
-        elif level_type == "put_next_boss_stage":
-            self.env = gym.make(
-                id="MiniCrawl-PutNextBossStageEnv-v0",
-                max_episode_steps=self.max_episode_steps,
-                room_size=12
-            )
-
-        return self.env.reset(seed=env_seed, options=options)
-
-    def _select_level_type(self):
-        if self.current_level % self.enlarge_frequency == 0 and self.current_level != 0:
-            stage_type = np.random.choice(BOSS_STAGES)
-            return f"{stage_type}_boss_stage"
-        else:
-            return "dungeon_floor"
-
-    def _create_dungeon_floor(self):
-        """
-            Creates a random floor plan of size (self._grid_size, self._grid_size)
-        :return: None
-        """
-        self._grid = np.zeros(shape=(self.grid_size, self.grid_size))
-        self._grid[::2, ::2] = 1
-        self._grid[1::2, 1::2] = 1
-        # Remove some rooms
-        self._draw_rooms()
-        connects = {}
-        for i, j in np.ndindex(self._grid.shape):
-            connections = self._get_neighbors(i, j)
-            connects[(i, j)] = connections
-        self._build_maze_graph(connects)
-        # Build a map for keeping track of node types
-        for n in self._maze_graph.get_nodes():
-            if self._grid[int(n[0]), int(n[1])] == 0:
-                self._grid[int(n[0]), int(n[1])] = 2
-        # Build connection map
-        for i, j in np.ndindex(self._grid.shape):
-            self._get_connections(i, j)
-
-    def _draw_rooms(self):
-        rooms = np.argwhere(self._grid == 1)
-        num_rooms = int(np.sum(self._grid))
-        for i, j in rooms:
-            obj = np.random.randint(0, 2)
-            if obj == 0 and num_rooms > self.min_rooms:
-                num_rooms -= 1
-                self._grid[i, j] = obj
-
-    def _get_connections(self, row, col):
-        assert self._maze_graph is not None, "_get_connections() must be called after the floor graph is created."
-        self._connects[(row, col)] = {}
-        for e in self._maze_graph.get_edges((row, col)):
-            if e == (row, col + 1):
-                self._connects[(row, col)]["east"] = self._grid[row, col + 1]
-            elif e == (row, col - 1):
-                self._connects[(row, col)]["west"] = self._grid[row, col - 1]
-            elif e == (row - 1, col):
-                self._connects[(row, col)]["north"] = self._grid[row - 1, col]
-            elif e == (row + 1, col):
-                self._connects[(row, col)]["south"] = self._grid[row + 1, col]
-
-    def _get_neighbors(self, row, col):
-        """
-            Retrieves objects in Manhattan neighborhood
-        :param row: int - row index
-        :param col: int - col index
-        :return: dict - manhattan-neighbors of current location
-        """
-        neighbors = {}
-        if row > 0:
-            neighbors["north"] = self._grid[row - 1, col]
-        if row < self.grid_size - 1:
-            neighbors["south"] = self._grid[row + 1, col]
-        if col > 0:
-            neighbors["west"] = self._grid[row, col - 1]
-        if col < self.grid_size - 1:
-            neighbors["east"] = self._grid[row, col + 1]
-
-        return neighbors
-
-    def _build_maze_graph(self, connects):
-        # Step 1: Build graph with all connections (very dense, in some cases might be complete)
-        g = Graph(directed=False)
-        for i, j in np.ndindex(self._grid.shape):
-            try:
-                if (i, j) not in g.get_nodes():
-                    g.add_node((i, j))
-                for k in connects[(i, j)].keys():
-                    if k == "east":
-                        g.add_egde((i, j), (i, j + 1))
-                    elif k == "west":
-                        g.add_egde((i, j), (i, j - 1))
-                    elif k == "north":
-                        g.add_egde((i, j), (i - 1, j))
-                    else:
-                        g.add_egde((i, j), (i + 1, j))
-            except KeyError:
-                continue
-        # Step 2: build minimum spanning tree starting from a random node
-        nodes = g.get_nodes()
-        node_idx = np.random.randint(0, len(nodes))
-        self._maze_graph = minimum_spanning_tree(g, nodes[node_idx])
-        # Step 3: build some edges back
-        num_back_edges = np.random.randint(0, 10)
-        for i in range(num_back_edges):
-            node_idx = np.random.choice(len(nodes))
-            n = g.get_nodes()[node_idx]
-            neighbors = self._get_neighbors(n[0], n[1])
-            edge_idx = np.random.choice(len(neighbors))
-            k = list(neighbors.keys())[edge_idx]
-            if k == "east":
-                e = (n[0], n[1] + 1)
-            elif k == "west":
-                e = (n[0], n[1] - 1)
-            elif k == "north":
-                e = (n[0] - 1, n[1])
-            else:
-                e = (n[0] + 1, n[1])
-            self._maze_graph.add_egde(n, e)
-
-    def choose_goal_and_agent_positions(self):
-        if self.current_level % self.enlarge_frequency == 0 and self.current_level != 0:
-            return (0, 0), (0, 0)
-        else:
-            rooms_names = list(np.argwhere(self._grid == 1))
-            stairs_room_idx = np.random.randint(0, len(rooms_names))
-            stairs_room = tuple(rooms_names[stairs_room_idx])
-            # Ensure exploration by placing agent in a different room
-            rooms_names.pop(stairs_room_idx)
-            agent_room_idx = np.random.randint(0, len(rooms_names))
-            agent_room = tuple(rooms_names[agent_room_idx])
-
-        return stairs_room, agent_room

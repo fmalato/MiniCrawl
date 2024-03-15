@@ -35,6 +35,7 @@ class DungeonMaster:
         self._connects = {}
         self._current_level = 0
         self._min_rooms = self._grid_size
+        self._floor_map_edge = 80
 
         self._create_dungeon_floor()
 
@@ -230,8 +231,8 @@ class DungeonMaster:
 
     def build_floor_map(self, agent_pos, agent_dir, goal_pos):
         # TODO: grid_size >= 9 is confusing
-        cell_px_size = int(80 / self._grid_size)
-        floor_map = np.zeros(shape=(80, 80, 3), dtype=np.uint8)
+        cell_px_size = int(self._floor_map_edge / self._grid_size)
+        floor_map = np.zeros(shape=(self._floor_map_edge, self._floor_map_edge, 3), dtype=np.uint8)
         # Draw corridors
         half_cell = int(cell_px_size / 2)
         quarter_cell = int(cell_px_size / 4)
@@ -269,17 +270,17 @@ class DungeonMaster:
             floor_map[start_x: end_x, start_y: end_y, :] = COLORS["BROWN"]
         # Draw agent position
         max_pos = self._grid_size * 9
-        agent_pos_x = int((agent_pos[0] / max_pos) * 80)
-        agent_pos_y = int((agent_pos[2] / max_pos) * 80)
-        floor_map[agent_pos_y - 1: agent_pos_y + 2, agent_pos_x - 1: agent_pos_x + 2, :] = COLORS["RED"]
+        agent_pos_x = int((agent_pos[0] / max_pos) * self._floor_map_edge)
+        agent_pos_y = int((agent_pos[2] / max_pos) * self._floor_map_edge)
+        floor_map[max(agent_pos_y - 1, 0): min(agent_pos_y + 2, self._floor_map_edge), max(agent_pos_x - 1, 0): min(agent_pos_x + 2, self._floor_map_edge), :] = COLORS["RED"]
         # Draw agent direction
-        agent_dir_x = int((agent_dir[0] / max_pos) * 80)
-        agent_dir_y = int((agent_dir[2] / max_pos) * 80)
+        agent_dir_x = int((agent_dir[0] / max_pos) * self._floor_map_edge)
+        agent_dir_y = int((agent_dir[2] / max_pos) * self._floor_map_edge)
         # TODO: invisible for grid_size >= 5
-        floor_map[agent_pos_y + agent_dir_y, agent_pos_x + agent_dir_x, :] = COLORS["RED"]
+        floor_map[max(min(agent_pos_y + agent_dir_y, self._floor_map_edge), 0), max(min(agent_pos_x + agent_dir_x, self._floor_map_edge), 0), :] = COLORS["RED"]
         # Draw goal
-        goal_pos_x = int((goal_pos[0] / max_pos) * 80)
-        goal_pos_y = int((goal_pos[2] / max_pos) * 80)
+        goal_pos_x = int((goal_pos[0] / max_pos) * self._floor_map_edge)
+        goal_pos_y = int((goal_pos[2] / max_pos) * self._floor_map_edge)
         floor_map[goal_pos_y - 1: goal_pos_y + 2, goal_pos_x - 1: goal_pos_x + 2, :] = COLORS["YELLOW"]
 
         return floor_map

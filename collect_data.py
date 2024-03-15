@@ -7,7 +7,7 @@ import gymnasium as gym
 from minicrawl.controller import BaseController
 
 
-NUM_GAMES = 1
+NUM_GAMES = 3
 
 def generate_result_folder_name():
     return ''.join(random.choice('0123456789ABCDEFGHIJLKMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz') for i in range(24))

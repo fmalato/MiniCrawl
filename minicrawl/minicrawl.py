@@ -299,11 +299,11 @@ class MiniCrawlAvoidObstaclesFloor(MiniCrawlFloor):
         truncated = False
         for i, (k, v) in enumerate(entities.items()):
             if isinstance(v, dict):
-                dir = v["direction"]
+                direction = v["direction"]
                 o = v["entity"]
                 if (not 1 < o.pos[0] < self.room_size - 1) or (not 1 < o.pos[2] < self.room_size - 1):
                     # TODO: this does not affect self.entities_dict[k]["direction"]
-                    v["direction"] = -dir
+                    v["direction"] = -direction
                 if step_count > 0 and self.obstacles_moving:
                     o.pos = o.pos + v["direction"] * self.obstacles_step
                 if self.near(entities["agent"], o):
@@ -370,6 +370,7 @@ class MiniCrawlEnv(MiniWorldEnv):
         self.t2 = None
 
         self.current_level = 1
+        self.step_count = 0
         self.current_floor_name = "dungeon_floor"
         self.current_floor = MiniCrawlDungeonFloor(max_episode_steps=max_episode_steps)
 
@@ -407,6 +408,7 @@ class MiniCrawlEnv(MiniWorldEnv):
 
     def next_level(self):
         self.current_level += 1
+        self.step_count = 0
         if self.current_level % self.boss_stage_freq == 0 and self.current_level != 0:
             self._dungeon_master.increment_grid_size()
         obs, info = self.reset()
@@ -642,8 +644,11 @@ class MiniCrawlEnv(MiniWorldEnv):
             )
 
         # Draw the text label in the window
+        pos_x, pos_y, pos_z = self.agent.pos
         self.text_label.text = "pos: (%.2f, %.2f, %.2f)\nangle: %d\nsteps: %d\nlevel: %d" % (
-            *self.agent.pos,
+            pos_x,
+            pos_y,
+            pos_z,
             int(self.agent.dir * 180 / math.pi) % 360,
             self.step_count,
             self.current_level

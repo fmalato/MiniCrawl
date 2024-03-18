@@ -1,5 +1,4 @@
 from miniworld.params import DomainParams
-from enum import Enum
 
 import numpy as np
 

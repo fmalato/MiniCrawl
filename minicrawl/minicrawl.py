@@ -249,9 +249,9 @@ class MiniCrawlPickUpFloor(MiniCrawlFloor):
         target_color = np.random.choice(self.colors)
         target_item = np.random.choice(self.objects)
         # Create objects
-        pos_x = 3
+        pos_x = 1.5
         for c in self.colors:
-            pos_z = 2
+            pos_z = 1.5
             for o in self.objects:
                 if o == "box":
                     entities_dict[(pos_x, 0, pos_z)] = Box(color=c)
@@ -261,8 +261,8 @@ class MiniCrawlPickUpFloor(MiniCrawlFloor):
                     entities_dict[(pos_x, 0, pos_z)] = Ball(color=c)
                 if c == target_color and o == target_item:
                     entities_dict["target"] = entities_dict[(pos_x, 0, pos_z)]
-                pos_z += 2
-            pos_x += 2
+                pos_z += 2.5
+            pos_x += 2.5
 
         # Add mission tags
         upper = [self.room_size, 2.35, self.room_size / 2]
@@ -302,7 +302,6 @@ class MiniCrawlAvoidObstaclesFloor(MiniCrawlFloor):
                 direction = v["direction"]
                 o = v["entity"]
                 if (not 1 < o.pos[0] < self.room_size - 1) or (not 1 < o.pos[2] < self.room_size - 1):
-                    # TODO: this does not affect self.entities_dict[k]["direction"]
                     v["direction"] = -direction
                 if step_count > 0 and self.obstacles_moving:
                     o.pos = o.pos + v["direction"] * self.obstacles_step
@@ -311,7 +310,7 @@ class MiniCrawlAvoidObstaclesFloor(MiniCrawlFloor):
                     return reward, terminated, truncated
 
         if self.near(entities["agent"], entities["target"]):
-            reward += self._reward(step_count)
+            reward = -100
             terminated = True
         if step_count > self.max_episode_steps:
             truncated = True
@@ -342,6 +341,21 @@ class MiniCrawlAvoidObstaclesFloor(MiniCrawlFloor):
         # Add target
         entities_dict[(self.room_size - 1, 0, self.room_size - 1)] = Key(color="yellow")
         entities_dict["target"] = entities_dict[(self.room_size - 1, 0, self.room_size - 1)]
+        # Add mission
+        upper = [self.room_size, 2.35, self.room_size / 2]
+        middle = [self.room_size, 1.45, self.room_size / 2]
+        entities_dict["upper"] = TextFrame(
+            pos=upper,
+            dir=math.pi,
+            str="avoid blue balls",
+            height=0.9
+        )
+        entities_dict["middle"] = TextFrame(
+            pos=middle,
+            dir=math.pi,
+            str="collect key",
+            height=0.9
+        )
 
         return rooms_dict, {}, {}, entities_dict
 
@@ -403,6 +417,7 @@ class MiniCrawlEnv(MiniWorldEnv):
         self.current_floor = self._select_new_floor_class()
 
         obs, info = super().reset(seed=seed, options=options)
+        info["level_name"] = self.current_floor_name
 
         return obs, info
 
@@ -419,6 +434,8 @@ class MiniCrawlEnv(MiniWorldEnv):
         return self.current_level > self.max_level
 
     def _select_new_floor_class(self):
+        if self.current_level == self.max_level:
+            return MiniCrawlAvoidObstaclesFloor(max_episode_steps=1000, obstacles_moving=True)
         if self.current_floor_name == "dungeon_floor":
             return MiniCrawlDungeonFloor(max_episode_steps=self.max_episode_steps)
         elif self.current_floor_name == "put_next_boss_stage":
@@ -426,7 +443,7 @@ class MiniCrawlEnv(MiniWorldEnv):
         elif self.current_floor_name == "pick_up_boss_stage":
             return MiniCrawlPickUpFloor(max_episode_steps=1000, room_size=15)
         elif self.current_floor_name == "avoid_obstacles_boss_stage":
-            return MiniCrawlAvoidObstaclesFloor(max_episode_steps=self.max_episode_steps, obstacles_moving=self.current_level > 5)
+            return MiniCrawlAvoidObstaclesFloor(max_episode_steps=self.max_episode_steps, obstacles_moving=False)
         else:
             return None
 

@@ -230,7 +230,7 @@ class DungeonMaster:
         return agent_room
 
     def build_floor_map(self, agent_pos, agent_dir, goal_pos, cell_size=9):
-        # TODO: grid_size >= 9 is confusing
+        # TODO: grid_size >= 9 is confusing (workaround: grid 9x9 never reached for now)
         cell_px_size = int(self._floor_map_edge / self._grid_size)
         floor_map = np.zeros(shape=(self._floor_map_edge, self._floor_map_edge, 3), dtype=np.uint8)
         # Draw corridors
@@ -272,17 +272,17 @@ class DungeonMaster:
         max_pos = self._grid_size * cell_size
         agent_pos_x = int((agent_pos[0] / max_pos) * self._floor_map_edge)
         agent_pos_y = int((agent_pos[2] / max_pos) * self._floor_map_edge)
-        #floor_map[max(agent_pos_y - 1, 0): min(agent_pos_y + 2, self._floor_map_edge), max(agent_pos_x - 1, 0): min(agent_pos_x + 2, self._floor_map_edge), :] = COLORS["RED"]
-        floor_map[agent_pos_y, agent_pos_x, :] = COLORS["RED"]
+        floor_map[max(agent_pos_y - 1, 0): min(agent_pos_y + 2, self._floor_map_edge), max(agent_pos_x - 1, 0): min(agent_pos_x + 2, self._floor_map_edge), :] = COLORS["RED"]
+        #floor_map[agent_pos_y, agent_pos_x, :] = COLORS["RED"]
         # Draw agent direction
-        agent_dir_x = int((agent_dir[0] / max_pos) * self._floor_map_edge)
-        agent_dir_y = int((agent_dir[2] / max_pos) * self._floor_map_edge)
+        #agent_dir_x = int((agent_dir[0] / max_pos) * self._floor_map_edge)
+        #agent_dir_y = int((agent_dir[2] / max_pos) * self._floor_map_edge)
         # TODO: invisible for grid_size >= 5
-        floor_map[max(min(agent_pos_y + agent_dir_y, self._floor_map_edge), 0), max(min(agent_pos_x + agent_dir_x, self._floor_map_edge), 0), :] = COLORS["RED"]
+        #floor_map[max(min(agent_pos_y + agent_dir_y, self._floor_map_edge), 0), max(min(agent_pos_x + agent_dir_x, self._floor_map_edge), 0), :] = COLORS["RED"]
         # Draw goal
         goal_pos_x = int((goal_pos[0] / max_pos) * self._floor_map_edge)
         goal_pos_y = int((goal_pos[2] / max_pos) * self._floor_map_edge)
-        #floor_map[goal_pos_y - 1: goal_pos_y + 2, goal_pos_x - 1: goal_pos_x + 2, :] = COLORS["YELLOW"]
-        floor_map[goal_pos_y, goal_pos_x, :] = COLORS["YELLOW"]
+        floor_map[goal_pos_y - 1: goal_pos_y + 2, goal_pos_x - 1: goal_pos_x + 2, :] = COLORS["YELLOW"]
+        #floor_map[goal_pos_y, goal_pos_x, :] = COLORS["YELLOW"]
 
         return floor_map

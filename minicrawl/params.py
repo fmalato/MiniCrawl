@@ -71,6 +71,8 @@ COLORS = dict(
 
 # TODO: design more
 BOSS_STAGES = [
+    "put_next",
+    "pick_up",
     "avoid_obstacles"
 ]
 

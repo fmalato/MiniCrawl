@@ -229,7 +229,7 @@ class DungeonMaster:
 
         return agent_room
 
-    def build_floor_map(self, agent_pos, agent_dir, goal_pos):
+    def build_floor_map(self, agent_pos, agent_dir, goal_pos, cell_size=9):
         # TODO: grid_size >= 9 is confusing
         cell_px_size = int(self._floor_map_edge / self._grid_size)
         floor_map = np.zeros(shape=(self._floor_map_edge, self._floor_map_edge, 3), dtype=np.uint8)
@@ -269,10 +269,11 @@ class DungeonMaster:
             end_y = (r[1] + 1) * cell_px_size
             floor_map[start_x: end_x, start_y: end_y, :] = COLORS["BROWN"]
         # Draw agent position
-        max_pos = self._grid_size * 9
+        max_pos = self._grid_size * cell_size
         agent_pos_x = int((agent_pos[0] / max_pos) * self._floor_map_edge)
         agent_pos_y = int((agent_pos[2] / max_pos) * self._floor_map_edge)
-        floor_map[max(agent_pos_y - 1, 0): min(agent_pos_y + 2, self._floor_map_edge), max(agent_pos_x - 1, 0): min(agent_pos_x + 2, self._floor_map_edge), :] = COLORS["RED"]
+        #floor_map[max(agent_pos_y - 1, 0): min(agent_pos_y + 2, self._floor_map_edge), max(agent_pos_x - 1, 0): min(agent_pos_x + 2, self._floor_map_edge), :] = COLORS["RED"]
+        floor_map[agent_pos_y, agent_pos_x, :] = COLORS["RED"]
         # Draw agent direction
         agent_dir_x = int((agent_dir[0] / max_pos) * self._floor_map_edge)
         agent_dir_y = int((agent_dir[2] / max_pos) * self._floor_map_edge)
@@ -281,6 +282,7 @@ class DungeonMaster:
         # Draw goal
         goal_pos_x = int((goal_pos[0] / max_pos) * self._floor_map_edge)
         goal_pos_y = int((goal_pos[2] / max_pos) * self._floor_map_edge)
-        floor_map[goal_pos_y - 1: goal_pos_y + 2, goal_pos_x - 1: goal_pos_x + 2, :] = COLORS["YELLOW"]
+        #floor_map[goal_pos_y - 1: goal_pos_y + 2, goal_pos_x - 1: goal_pos_x + 2, :] = COLORS["YELLOW"]
+        floor_map[goal_pos_y, goal_pos_x, :] = COLORS["YELLOW"]
 
         return floor_map

@@ -10,11 +10,11 @@ import pyglet.text
 
 from gymnasium.core import ObsType
 from miniworld.miniworld import MiniWorldEnv
-from miniworld.entity import Key, Box, TextFrame
+from miniworld.entity import Key, Box, Ball, TextFrame
 
 from minicrawl.dungeon_master import DungeonMaster
 from minicrawl.components.rooms import SquaredRoom, JunctionRoom, Corridor
-from minicrawl.params import DEFAULT_DM_PARAMS, DEFAULT_PARAMS, BOSS_STAGES
+from minicrawl.params import DEFAULT_DM_PARAMS, DEFAULT_PARAMS, BOSS_STAGES, DIRECTIONS
 
 from pyglet.gl import (
     GL_COLOR_BUFFER_BIT,
@@ -44,7 +44,7 @@ class MiniCrawlFloor:
         self.ceil_tex = ceil_tex
 
     @abstractmethod
-    def step(self):
+    def step(self, entities, reward, step_count):
         return NotImplementedError
 
     @abstractmethod
@@ -63,6 +63,9 @@ class MiniCrawlFloor:
         dist = np.linalg.norm(ent0.pos - ent1.pos)
         return dist < ent0.radius + ent1.radius + 1.1 * 0.17
 
+    def _reward(self, step_count):
+        return 1.0 - 0.2 * (step_count / self.max_episode_steps)
+
 
 class MiniCrawlDungeonFloor(MiniCrawlFloor):
     def __init__(self, max_episode_steps=2000, room_size=9, junction_size=3, floor_tex="wood_planks",
@@ -71,13 +74,18 @@ class MiniCrawlDungeonFloor(MiniCrawlFloor):
         super().__init__(max_episode_steps, room_size, floor_tex, wall_tex, ceil_tex)
         self.junction_size = junction_size
 
-    def step(self, agent, goal, reward, step_count):
+    def step(self, entities: dict, reward, step_count):
+        assert "agent" in entities.keys(), "Stepping in MiniCrawlDungeonFloor requires an agent"
+        assert "goal" in entities.keys(), "Stepping in MiniCrawlDungeonFloor requires a goal"
         terminated = False
-        if self.near(agent, goal):
+        truncated = False
+        if self.near(entities["agent"], entities["goal"]):
             reward += self._reward(step_count)
             terminated = True
+        if step_count > self.max_episode_steps:
+            truncated = True
 
-        return reward, terminated
+        return reward, terminated, truncated
 
     def _reward(self, step_count):
         return 1.0 - 0.2 * (step_count / self.max_episode_steps)
@@ -135,26 +143,34 @@ class MiniCrawlPutNextFloor(MiniCrawlFloor):
             "yellow"
         ]
         self.positions = [
-            [1, 0, 1],
-            [self.room_size - 1, 0, 1],
-            [1, 0, self.room_size - 1],
-            [self.room_size - 1, 0, self.room_size - 1]
+            [2, 0, 2],
+            [self.room_size - 2, 0, 2],
+            [2, 0, self.room_size - 2],
+            [self.room_size - 2, 0, self.room_size - 2]
         ]
 
-    def step(self, t1, t2, carrying, reward, step_count):
+    def step(self, entities, reward, step_count):
+        assert "agent" in entities.keys(), "Stepping in PutNextFloor requires an agent"
+        assert "target_1" in entities.keys(), "Stepping in PutNextFloor requires target_1"
+        assert "target_2" in entities.keys(), "Stepping in PutNextFloor requires target_2"
         terminated = False
-        if carrying is None and self.near(t1, t2):
+        truncated = False
+        if entities["agent"].carrying is None and self.near(entities["target_1"], entities["target_2"]):
             reward += self._reward(step_count)
             terminated = True
+        if step_count > self.max_episode_steps:
+            truncated = True
 
-        return terminated, reward
-
-    def _reward(self, step_count):
-        return 1.0 - 0.2 * (step_count / self.max_episode_steps)
+        return reward, terminated, truncated
 
     def gen_world(self, options):
         rooms_dict = {}
         entities_dict = {}
+        # Selects targets
+        targets = deepcopy(self.colors)
+        t1 = np.random.choice(targets)
+        targets.remove(t1)
+        t2 = np.random.choice(targets)
         # Build the room
         rooms_dict[(0, 0)] = SquaredRoom(
             position=(0, 0),
@@ -167,11 +183,11 @@ class MiniCrawlPutNextFloor(MiniCrawlFloor):
         np.random.shuffle(self.colors)
         for color, pos in zip(self.colors, self.positions):
             entities_dict[tuple(pos)] = Box(color=color)
-        # Selects targets
-        targets = deepcopy(self.colors)
-        t1 = np.random.choice(targets)
-        targets.remove(t1)
-        t2 = np.random.choice(targets)
+            # Link the same value to two keys for better retrieval later on
+            if color == t1:
+                entities_dict["target_1"] = entities_dict[tuple(pos)]
+            if color == t2:
+                entities_dict["target_2"] = entities_dict[tuple(pos)]
         # Add the tags
         upper = [self.room_size, 2.35, self.room_size / 2]
         middle = [self.room_size, 1.70, self.room_size / 2]
@@ -198,6 +214,137 @@ class MiniCrawlPutNextFloor(MiniCrawlFloor):
         return rooms_dict, {}, {}, entities_dict
 
 
+class MiniCrawlPickUpFloor(MiniCrawlFloor):
+    def __init__(self, max_episode_steps=1000, room_size=15, floor_tex="wood_planks", wall_tex="cinder_blocks",
+                 ceil_tex="rock"):
+        super().__init__(max_episode_steps, room_size, floor_tex, wall_tex, ceil_tex)
+        self.colors = ["green", "blue", "red", "yellow", "purple", "grey"]
+        self.objects = ["box", "key", "ball"]
+
+    def step(self, entities, reward, step_count):
+        assert "agent" in entities.keys(), "Stepping in PickUpFloor requires an agent"
+        assert "target" in entities.keys(), "Stepping in PickUpFloor requires target"
+        terminated = False
+        truncated = False
+        if entities["agent"].carrying == entities["target"]:
+            reward += self._reward(step_count)
+            terminated = True
+        if step_count > self.max_episode_steps:
+            truncated = True
+
+        return reward, terminated, truncated
+
+    def gen_world(self, options):
+        rooms_dict = {}
+        entities_dict = {}
+        # Build the room
+        rooms_dict[(0, 0)] = SquaredRoom(
+            position=(0, 0),
+            edge_size=self.room_size,
+            floor_tex=self.floor_tex,
+            wall_tex=self.wall_tex,
+            ceil_text=self.ceil_tex
+        )
+        # Select target
+        target_color = np.random.choice(self.colors)
+        target_item = np.random.choice(self.objects)
+        # Create objects
+        pos_x = 3
+        for c in self.colors:
+            pos_z = 2
+            for o in self.objects:
+                if o == "box":
+                    entities_dict[(pos_x, 0, pos_z)] = Box(color=c)
+                elif o == "key":
+                    entities_dict[(pos_x, 0, pos_z)] = Key(color=c)
+                else:
+                    entities_dict[(pos_x, 0, pos_z)] = Ball(color=c)
+                if c == target_color and o == target_item:
+                    entities_dict["target"] = entities_dict[(pos_x, 0, pos_z)]
+                pos_z += 2
+            pos_x += 2
+
+        # Add mission tags
+        upper = [self.room_size, 2.35, self.room_size / 2]
+        middle = [self.room_size, 1.70, self.room_size / 2]
+        entities_dict["upper"] = TextFrame(
+            pos=upper,
+            dir=math.pi,
+            str="pick up",
+            height=0.65
+        )
+        entities_dict["middle"] = TextFrame(
+            pos=middle,
+            dir=math.pi,
+            str=f"{target_color} {target_item}",
+            height=0.65
+        )
+
+        return rooms_dict, {},  {}, entities_dict
+
+
+class MiniCrawlAvoidObstaclesFloor(MiniCrawlFloor):
+    def __init__(self, max_episode_steps=1000, room_size=15, floor_tex="wood_planks", wall_tex="cinder_blocks",
+                 ceil_tex="rock", num_obstacles=10, obstacles_step=0.1):
+        super().__init__(max_episode_steps, room_size, floor_tex, wall_tex, ceil_tex)
+        self.num_obstacles = num_obstacles
+        self.obstacles_step = obstacles_step
+        self.obstacles_direction = []
+
+    def step(self, entities, reward, step_count):
+        assert "agent" in entities.keys(), "Stepping in PickUpFloor requires an agent"
+        assert "target" in entities.keys(), "Stepping in PickUpFloor requires target"
+        terminated = False
+        truncated = False
+        for i, (k, v) in enumerate(entities.items()):
+            if isinstance(v, dict):
+                dir = v["direction"]
+                o = v["entity"]
+                if (not 1 < o.pos[0] < self.room_size - 1) or (not 1 < o.pos[2] < self.room_size - 1):
+                    # TODO: this does not affect self.entities_dict[k]["direction"]
+                    v["direction"] = -dir
+                if step_count > 0:
+                    o.pos = o.pos + dir * self.obstacles_step
+                if self.near(entities["agent"], o):
+                    truncated = True
+                    return reward, terminated, truncated
+
+        if self.near(entities["agent"], entities["target"]):
+            reward += self._reward(step_count)
+            terminated = True
+        if step_count > self.max_episode_steps:
+            truncated = True
+
+        return reward, terminated, truncated
+
+    def gen_world(self, options):
+        rooms_dict = {}
+        entities_dict = {}
+        # Build room
+        rooms_dict[(0, 0)] = SquaredRoom(
+            position=(0, 0),
+            edge_size=self.room_size,
+            floor_tex=self.floor_tex,
+            wall_tex=self.wall_tex,
+            ceil_text=self.ceil_tex
+        )
+        # Build world
+        xs = list(range(2, self.room_size - 2, 1))
+        zs = list(range(2, self.room_size - 2, 1))
+        for i in range(self.num_obstacles):
+            self.obstacles_direction.append(np.array(DIRECTIONS[np.random.choice(list(DIRECTIONS.keys()))]))
+            pos_x = np.random.choice(xs)
+            xs.remove(pos_x)
+            pos_z = np.random.choice(zs)
+            zs.remove(pos_z)
+            entities_dict[(pos_x, 0, pos_z)] = {"direction": self.obstacles_direction[i], "entity": Ball(color="blue")}
+        # Add target
+        entities_dict[(self.room_size - 1, 0, self.room_size - 1)] = Key(color="yellow")
+        entities_dict["target"] = entities_dict[(self.room_size - 1, 0, self.room_size - 1)]
+
+        return rooms_dict, {}, {}, entities_dict
+
+
 class MiniCrawlEnv(MiniWorldEnv):
     def __init__(
             self,
@@ -216,6 +363,7 @@ class MiniCrawlEnv(MiniWorldEnv):
         self.junctions_dict = {}
         self.corrs_dict = {}
         self.entities_dict = {}
+        self.step_entities = {}
         self.stairs = None
         self.t1 = None
         self.t2 = None
@@ -231,10 +379,7 @@ class MiniCrawlEnv(MiniWorldEnv):
 
     def step(self, action):
         obs, reward, terminated, truncated, info = super().step(action)
-        if self.current_floor_name == "dungeon_floor":
-            reward, terminated = self.current_floor.step(self.agent, self.stairs, reward, self.step_count)
-        elif self.current_floor_name == "put_next_boss_stage":
-            reward, terminated = self.current_floor.step(self.t1, self.t2, self.agent.carrying, reward, self.step_count)
+        reward, terminated, truncated = self.current_floor.step(self.step_entities, reward, self.step_count)
 
         return obs, reward, terminated, truncated, info
 
@@ -246,9 +391,7 @@ class MiniCrawlEnv(MiniWorldEnv):
         self.junctions_dict = {}
         self.corrs_dict = {}
         self.entities_dict = {}
-        self.stairs = None
-        self.t1 = None
-        self.t2 = None
+        self.step_entities = {}
 
         if self.current_level % self.boss_stage_freq == 0 and self.current_level != 0:
             boss_stage = np.random.choice(BOSS_STAGES)
@@ -358,7 +501,7 @@ class MiniCrawlEnv(MiniWorldEnv):
 
         # Draw map
         if self.current_floor_name == "dungeon_floor" and self.render_map:
-            floor_map = self._dungeon_master.build_floor_map(self.agent.pos, self.agent.dir_vec, self.stairs.pos)
+            floor_map = self._dungeon_master.build_floor_map(self.agent.pos, self.agent.dir_vec, self.step_entities["goal"].pos)
             floor_map = np.ascontiguousarray(np.flip(floor_map, axis=0))
             map_data = pyglet.image.ImageData(
                 obs_width,
@@ -401,25 +544,27 @@ class MiniCrawlEnv(MiniWorldEnv):
         if self.current_floor_name == "dungeon_floor":
             return MiniCrawlDungeonFloor(max_episode_steps=self.max_episode_steps)
         elif self.current_floor_name == "put_next_boss_stage":
-            return MiniCrawlPutNextFloor(max_episode_steps=self.max_episode_steps)
+            return MiniCrawlPutNextFloor(max_episode_steps=1000)
+        elif self.current_floor_name == "pick_up_boss_stage":
+            return MiniCrawlPickUpFloor(max_episode_steps=1000)
+        elif self.current_floor_name == "avoid_obstacles_boss_stage":
+            return MiniCrawlAvoidObstaclesFloor(max_episode_steps=self.max_episode_steps)
         else:
             return None
 
     def _gen_world(self):
-        # Specify options according to floor type
+        options = {}
         if self.current_floor_name == "dungeon_floor":
             floor_graph, nodes_map, connections = self._dungeon_master.create_dungeon_floor()
+            # Dungeon floor requires some options
             options = {
                 "floor_grap": floor_graph,
                 "nodes_map": nodes_map,
                 "connections": connections
             }
-        elif self.current_floor_name == "put_next_boss_stage":
-            options = {
-                "room_size": 12
-            }
         # Build floor
         self.rooms_dict, self.junctions_dict, self.corrs_dict, self.entities_dict = self.current_floor.gen_world(options)
+        # Link created entities to MiniWorld entities
         for k, v in self.rooms_dict.items():
             self.rooms.append(v)
         for k, v in self.junctions_dict.items():
@@ -427,30 +572,41 @@ class MiniCrawlEnv(MiniWorldEnv):
             for orient, c in self.corrs_dict[k].items():
                 self.rooms.append(c)
         for k, v in self.entities_dict.items():
-            self.entities.append(v)
             if isinstance(k, tuple):
-                self.place_entity(v, pos=np.array(k))
-        # Link floor to env
-        # TODO: fine a cleaner way to handle this
+                if isinstance(v, dict):
+                    self.entities.append(v["entity"])
+                    self.place_entity(v["entity"], pos=np.array(k))
+                else:
+                    self.entities.append(v)
+                    self.place_entity(v, pos=np.array(k))
+        self._initialize_current_floor()
+        self.step_entities["agent"] = self.agent
+
+    def _initialize_current_floor(self):
+        # TODO: find a better way to organize this
         if self.current_floor_name == "dungeon_floor":
             self._link_entities()
             goal_room, agent_room = self._dungeon_master.choose_goal_and_agent_positions()
             goal_pos_x, goal_pos_z = self.rooms_dict[goal_room].mid_x, self.rooms_dict[goal_room].mid_z
-            self.stairs = self.place_entity(self.entities_dict["key"], pos=(goal_pos_x, 0, goal_pos_z))
-            self.entities.append(self.stairs)
+            stairs = self.place_entity(self.entities_dict["key"], pos=(goal_pos_x, 0, goal_pos_z))
+            self.entities.append(stairs)
             self.place_agent(room=self.rooms_dict[agent_room])
+            self.step_entities["goal"] = stairs
         elif self.current_floor_name == "put_next_boss_stage":
-            t1_name = self.entities_dict["upper"].str
-            t2_name = self.entities_dict["lower"].str
-            for k, v in self.entities_dict.items():
-                if isinstance(k, tuple) and t1_name == v.color:
-                    self.t1 = self.entities_dict[k]
-                if isinstance(k, tuple) and t2_name == v.color:
-                    self.t2 = self.entities_dict[k]
-                if self.t1 is not None and self.t2 is not None:
-                    break
+            self.step_entities["target_1"] = self.entities_dict["target_1"]
+            self.step_entities["target_2"] = self.entities_dict["target_2"]
             agent_room = self._dungeon_master.choose_agent_position(self.current_floor_name)
             self.place_agent(room=self.rooms_dict[agent_room], dir=0, min_x=5, max_x=7, min_z=5, max_z=7)
+        elif self.current_floor_name == "pick_up_boss_stage":
+            self.step_entities["target"] = self.entities_dict["target"]
+            agent_room = self._dungeon_master.choose_agent_position(self.current_floor_name)
+            self.place_agent(room=self.rooms_dict[agent_room], dir=0, min_x=5, max_x=7, min_z=13, max_z=14)
+        elif self.current_floor_name == "avoid_obstacles_boss_stage":
+            for k, v in self.entities_dict.items():
+                if k != "agent":
+                    self.step_entities[k] = v
+            agent_room = self._dungeon_master.choose_agent_position(self.current_floor_name)
+            self.place_agent(room=self.rooms_dict[agent_room], dir=-math.pi / 4, min_x=1, max_x=1, min_z=1, max_z=1)
 
     def _link_entities(self):
         floor_graph, nodes_map = self._dungeon_master.get_current_floor()

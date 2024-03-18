@@ -20,7 +20,7 @@ if __name__ == '__main__':
     os.makedirs(f"{result_dir}/no_map", exist_ok=True)
     controller = BaseController()
     # Test with map rendering
-    env = gym.make("MiniCrawl-DungeonCrawlerEnv-v0", render_mode="human", render_map=True, boss_stage_freq=5,
+    env = gym.make("MiniCrawl-DungeonCrawlerEnv-v0", render_mode="human", render_map=True, boss_stage_freq=4,
                    max_level=20)
     obs, _ = env.reset(seed=np.random.randint(1, 100000))
     terminated = False

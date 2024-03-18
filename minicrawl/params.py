@@ -62,8 +62,6 @@ DEFAULT_CORRIDOR_PARAMS = dict(
     no_ceiling=False
 )
 
-
-# TODO: find better struct
 COLORS = dict(
     BROWN=np.array([123, 63, 0], dtype=np.uint8),
     GREY=np.array([128, 128, 128], dtype=np.uint8),
@@ -73,9 +71,12 @@ COLORS = dict(
 
 # TODO: design more
 BOSS_STAGES = [
-    "put_next"
+    "avoid_obstacles"
 ]
 
-ENV_NAMES = {
-    "dungeon_floor": "MiniCrawl-DungeonFloorEnv-v0"
+DIRECTIONS = {
+    "north": [0, 0, -1],
+    "south": [0, 0, 1],
+    "east": [1, 0, 0],
+    "west": [-1, 0, 0]
 }

@@ -6,12 +6,10 @@ from minicrawl.controller import BaseController
 
 if __name__ == '__main__':
     controller = BaseController()
-    env = gym.make("MiniCrawl-DungeonCrawlerEnv-v0", render_mode="human", render_map=True, boss_stage_freq=2, max_level=4)
+    env = gym.make("MiniCrawl-DungeonCrawlerEnv-v0", render_mode="human", render_map=True, boss_stage_freq=2, max_level=20)
     obs, _ = env.reset(seed=np.random.randint(1, 100000))
     terminated = False
     truncated = False
-    obs = []
-    acts = []
 
     while not truncated:
         action = controller.wait_press()

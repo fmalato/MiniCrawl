@@ -229,6 +229,9 @@ class MiniCrawlPickUpFloor(MiniCrawlFloor):
         if entities["agent"].carrying == entities["target"]:
             reward += self._reward(step_count)
             terminated = True
+        if entities["agent"].carrying is not None and entities["agent"].carrying != entities["target"]:
+            reward = -100
+            truncated = True
         if step_count > self.max_episode_steps:
             truncated = True
 
@@ -306,11 +309,11 @@ class MiniCrawlAvoidObstaclesFloor(MiniCrawlFloor):
                 if step_count > 0 and self.obstacles_moving:
                     o.pos = o.pos + v["direction"] * self.obstacles_step
                 if self.near(entities["agent"], o):
+                    reward = -100
                     truncated = True
                     return reward, terminated, truncated
 
         if self.near(entities["agent"], entities["target"]):
-            reward = -100
             terminated = True
         if step_count > self.max_episode_steps:
             truncated = True
@@ -435,11 +438,12 @@ class MiniCrawlEnv(MiniWorldEnv):
 
     def _select_new_floor_class(self):
         if self.current_level == self.max_level:
+            self.current_floor_name = "avoid_obstacles_boss_stage"
             return MiniCrawlAvoidObstaclesFloor(max_episode_steps=1000, obstacles_moving=True)
         if self.current_floor_name == "dungeon_floor":
             return MiniCrawlDungeonFloor(max_episode_steps=self.max_episode_steps)
         elif self.current_floor_name == "put_next_boss_stage":
-            return MiniCrawlPutNextFloor(max_episode_steps=1000, room_size=12)
+            return MiniCrawlPutNextFloor(max_episode_steps=500, room_size=12)
         elif self.current_floor_name == "pick_up_boss_stage":
             return MiniCrawlPickUpFloor(max_episode_steps=1000, room_size=15)
         elif self.current_floor_name == "avoid_obstacles_boss_stage":
@@ -505,7 +509,7 @@ class MiniCrawlEnv(MiniWorldEnv):
                 if k != "agent":
                     self.step_entities[k] = v
             agent_room = self._dungeon_master.choose_agent_position(self.current_floor_name)
-            self.place_agent(room=self.rooms_dict[agent_room], dir=-math.pi / 4, min_x=1, max_x=1, min_z=1, max_z=1)
+            self.place_agent(room=self.rooms_dict[agent_room], dir=-math.pi / 4, min_x=0.5, max_x=0.5, min_z=0.5, max_z=0.5)
 
     def _link_entities(self):
         floor_graph, nodes_map = self._dungeon_master.get_current_floor()
@@ -556,6 +560,9 @@ class MiniCrawlEnv(MiniWorldEnv):
                         corr1 = self.corrs_dict[(i, j)][orientation]
                         corr2 = self.corrs_dict[(i, j + 1)]["west"]
                         self.connect_rooms(corr1, corr2, min_z=corr1.min_z, max_z=corr1.max_z)
+
+    def get_floor_map_for_analytics(self):
+        return self._dungeon_master.build_floor_map(self.agent.pos, self.agent.dir, self.stairs.pos if self.stairs else np.array([12, 0, 12]))
 
     def render(self):
         """

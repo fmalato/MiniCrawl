@@ -23,6 +23,7 @@ def play_games(controller, num_games, result_dir, render_map):
         rewards = []
         new_level = []
         level_names = []
+        level_map = []
         has_reached_max = False
         env.render()
         while not truncated:
@@ -33,6 +34,7 @@ def play_games(controller, num_games, result_dir, render_map):
             actions.append(action)
             rewards.append(float(reward))
             new_level.append(terminated)
+            level_map.append(env.unwrapped.get_floor_map_for_analytics())
             env.render()
             if terminated:
                 obs, info = env.unwrapped.next_level()
@@ -46,7 +48,7 @@ def play_games(controller, num_games, result_dir, render_map):
                     has_reached_max = True
                 env.close()
         np.savez_compressed(f"{result_dir}/{'map' if render_map else 'no_map'}/game_{i}.npz", observations=observations, actions=actions,
-                            rewards=rewards, new_level=new_level, has_reached_maximum=has_reached_max)
+                            level_map=level_map, rewards=rewards, new_level=new_level, has_reached_maximum=has_reached_max)
 
 
 def collect_data(num_games):

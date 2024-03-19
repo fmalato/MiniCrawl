@@ -68,7 +68,6 @@ COLORS = dict(
     YELLOW=np.array([255, 255, 0], dtype=np.uint8)
 )
 
-# TODO: design more
 BOSS_STAGES = [
     "put_next",
     "pick_up",

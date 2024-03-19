@@ -230,7 +230,7 @@ class MiniCrawlPickUpFloor(MiniCrawlFloor):
             reward += self._reward(step_count)
             terminated = True
         if entities["agent"].carrying is not None and entities["agent"].carrying != entities["target"]:
-            reward = -100
+            reward = -10
             truncated = True
         if step_count > self.max_episode_steps:
             truncated = True
@@ -309,7 +309,7 @@ class MiniCrawlAvoidObstaclesFloor(MiniCrawlFloor):
                 if step_count > 0 and self.obstacles_moving:
                     o.pos = o.pos + v["direction"] * self.obstacles_step
                 if self.near(entities["agent"], o):
-                    reward = -100
+                    reward = -10
                     truncated = True
                     return reward, terminated, truncated
 
@@ -388,6 +388,8 @@ class MiniCrawlEnv(MiniWorldEnv):
 
         self.current_level = 1
         self.step_count = 0
+        self.level_reward = 0.0
+        self.total_reward = 0.0
         self.current_floor_name = "dungeon_floor"
         self.current_floor = MiniCrawlDungeonFloor(max_episode_steps=max_episode_steps)
 
@@ -399,6 +401,7 @@ class MiniCrawlEnv(MiniWorldEnv):
     def step(self, action):
         obs, reward, terminated, truncated, info = super().step(action)
         reward, terminated, truncated = self.current_floor.step(self.step_entities, reward, self.step_count)
+        self.level_reward += reward * self.current_level
 
         return obs, reward, terminated, truncated, info
 
@@ -406,6 +409,7 @@ class MiniCrawlEnv(MiniWorldEnv):
             self, *, seed: Optional[int] = None, options: Optional[dict] = None
     ) -> Tuple[ObsType, dict]:
         self.step_count = 0
+        self.level_reward = 0.0
         self.rooms_dict = {}
         self.junctions_dict = {}
         self.corrs_dict = {}
@@ -427,6 +431,7 @@ class MiniCrawlEnv(MiniWorldEnv):
     def next_level(self):
         self.current_level += 1
         self.step_count = 0
+        self.total_reward += self.level_reward
         if self.current_level % self.boss_stage_freq == 0 and self.current_level != 0:
             self._dungeon_master.increment_grid_size()
         obs, info = self.reset()
@@ -435,6 +440,9 @@ class MiniCrawlEnv(MiniWorldEnv):
 
     def check_max_level_reached(self):
         return self.current_level > self.max_level
+
+    def compute_total_reward(self):
+        return self.total_reward
 
     def _select_new_floor_class(self):
         if self.current_level == self.max_level:

@@ -6,11 +6,11 @@ from minicrawl.controller import BaseController
 
 if __name__ == '__main__':
     controller = BaseController()
-    env = gym.make("MiniCrawl-DungeonCrawlerEnv-v0", render_mode="human", render_map=True, boss_stage_freq=2, max_level=20)
+    env = gym.make("MiniCrawl-DungeonCrawlerEnv-v0", render_mode="human", render_map=True, boss_stage_freq=2, max_level=6)
     obs, _ = env.reset(seed=np.random.randint(1, 100000))
     terminated = False
     truncated = False
-
+    total_reward = 0.0
     while not truncated:
         action = controller.wait_press()
         obs, reward, terminated, truncated, info = env.step(action)
@@ -20,3 +20,9 @@ if __name__ == '__main__':
             if env.unwrapped.check_max_level_reached():
                 env.close()
                 truncated = True
+                total_reward = env.unwrapped.compute_total_reward()
+        if truncated:
+            total_reward = env.unwrapped.compute_total_reward()
+            env.close()
+
+    print(f"Total reward: {total_reward}")

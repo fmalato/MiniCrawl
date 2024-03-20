@@ -4,7 +4,7 @@ import random
 import numpy as np
 import gymnasium as gym
 
-from minicrawl.controller import BaseController
+from minicrawl.controller import BasePynputController
 
 
 def generate_result_folder_name():
@@ -67,7 +67,7 @@ def collect_data(num_games):
     os.makedirs(f"{result_dir}/map", exist_ok=True)
     os.makedirs(f"{result_dir}/no_map", exist_ok=True)
 
-    controller = BaseController()
+    controller = BasePynputController()
     # Test with map rendering
     play_games(controller, num_games, result_dir, render_map=True)
     # Test without map rendering

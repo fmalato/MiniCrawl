@@ -86,6 +86,9 @@ agent successfully traverses the room and collects the key. Colliding with an ob
 - If the game window opens but the agent does not move, click on the
   terminal window you used to launch the experiment. The game only record
   keys pressed within that terminal window.
+- Some textures might not load correctly if you are using this library in a virtual environment whose file path includes
+  hidden folders (e.g. if your venv is declared in /home/username/.conda/envs). Please make sure to initialize your
+  virtual environment in a visible location.
 - If you get stuck on a wall, just take some steps back before proceeding.
 
 If you encounter any unknown bug, please report it in the **issue** section.

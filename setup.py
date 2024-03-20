@@ -16,6 +16,7 @@ setup(
         'gymnasium',
         'miniworld',
         'numpy',
+        'pynput',
         'keyboard'
     ],
     classifiers=[

@@ -1,11 +1,11 @@
 import numpy as np
 import gymnasium as gym
 
-from minicrawl.controller import BaseController
+from minicrawl.controller import BasePynputController
 
 
 if __name__ == '__main__':
-    controller = BaseController()
+    controller = BasePynputController()
     env = gym.make("MiniCrawl-DungeonCrawlerEnv-v0", render_mode="human", render_map=True, boss_stage_freq=2, max_level=6)
     obs, _ = env.reset(seed=np.random.randint(1, 100000))
     terminated = False

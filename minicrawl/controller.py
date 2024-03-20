@@ -35,7 +35,10 @@ class BasePynputController:
 
     def wait_press(self):
         with pynput.keyboard.Events() as events:
-            self._last_key = events.get().key.char
+            try:
+                self._last_key = events.get().key.char
+            except AttributeError:
+                self._last_key = "x"
 
         return self._map_key_press()
 

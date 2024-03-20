@@ -35,8 +35,9 @@ from pyglet.gl import (
 
 
 class MiniCrawlFloor:
-    def __init__(self, max_episode_steps, room_size, floor_tex="wood_planks", wall_tex="cinder_blocks",
+    def __init__(self, current_level, max_episode_steps, room_size, floor_tex="wood_planks", wall_tex="cinder_blocks",
                  ceil_tex="rock"):
+        self.current_level = current_level
         self.max_episode_steps = max_episode_steps
         self.room_size = room_size
         self.floor_tex = floor_tex
@@ -64,14 +65,13 @@ class MiniCrawlFloor:
         return dist < ent0.radius + ent1.radius + 1.1 * 0.17
 
     def _reward(self, step_count):
-        return 1.0 - 0.2 * (step_count / self.max_episode_steps)
+        return 1.0 - 0.2 * (step_count / self.max_episode_steps) * self.current_level
 
 
 class MiniCrawlDungeonFloor(MiniCrawlFloor):
-    def __init__(self, max_episode_steps=2000, room_size=9, junction_size=3, floor_tex="wood_planks",
-                 wall_tex="cinder_blocks",
-                 ceil_tex="rock"):
-        super().__init__(max_episode_steps, room_size, floor_tex, wall_tex, ceil_tex)
+    def __init__(self, current_level, max_episode_steps=2000, room_size=9, junction_size=3, floor_tex="wood_planks",
+                 wall_tex="cinder_blocks", ceil_tex="rock"):
+        super().__init__(current_level, max_episode_steps, room_size, floor_tex, wall_tex, ceil_tex)
         self.junction_size = junction_size
 
     def step(self, entities: dict, reward, step_count):
@@ -83,12 +83,10 @@ class MiniCrawlDungeonFloor(MiniCrawlFloor):
             reward += self._reward(step_count)
             terminated = True
         if step_count > self.max_episode_steps:
+            reward = -5 * (1 / min(self.current_level, 10))
             truncated = True
 
         return reward, terminated, truncated
-
-    def _reward(self, step_count):
-        return 1.0 - 0.2 * (step_count / self.max_episode_steps)
 
     def gen_world(self, options):
         rooms_dict = {}
@@ -133,9 +131,9 @@ class MiniCrawlDungeonFloor(MiniCrawlFloor):
 
 
 class MiniCrawlPutNextFloor(MiniCrawlFloor):
-    def __init__(self, max_episode_steps=1000, room_size=12, floor_tex="wood_planks", wall_tex="cinder_blocks",
+    def __init__(self, current_level, max_episode_steps=1000, room_size=12, floor_tex="wood_planks", wall_tex="cinder_blocks",
                  ceil_tex="rock"):
-        super().__init__(max_episode_steps, room_size, floor_tex, wall_tex, ceil_tex)
+        super().__init__(current_level, max_episode_steps, room_size, floor_tex, wall_tex, ceil_tex)
         self.colors = [
             "blue",
             "green",
@@ -215,9 +213,9 @@ class MiniCrawlPutNextFloor(MiniCrawlFloor):
 
 
 class MiniCrawlPickUpFloor(MiniCrawlFloor):
-    def __init__(self, max_episode_steps=1000, room_size=15, floor_tex="wood_planks", wall_tex="cinder_blocks",
+    def __init__(self, current_level, max_episode_steps=1000, room_size=15, floor_tex="wood_planks", wall_tex="cinder_blocks",
                  ceil_tex="rock"):
-        super().__init__(max_episode_steps, room_size, floor_tex, wall_tex, ceil_tex)
+        super().__init__(current_level, max_episode_steps, room_size, floor_tex, wall_tex, ceil_tex)
         self.colors = ["green", "blue", "red", "yellow", "purple", "grey"]
         self.objects = ["box", "key", "ball"]
 
@@ -230,7 +228,7 @@ class MiniCrawlPickUpFloor(MiniCrawlFloor):
             reward += self._reward(step_count)
             terminated = True
         if entities["agent"].carrying is not None and entities["agent"].carrying != entities["target"]:
-            reward = -10
+            reward = -10 * (1 / min(self.current_level, 10))
             truncated = True
         if step_count > self.max_episode_steps:
             truncated = True
@@ -287,9 +285,9 @@ class MiniCrawlPickUpFloor(MiniCrawlFloor):
 
 
 class MiniCrawlAvoidObstaclesFloor(MiniCrawlFloor):
-    def __init__(self, max_episode_steps=1000, room_size=15, floor_tex="wood_planks", wall_tex="cinder_blocks",
+    def __init__(self, current_level, max_episode_steps=1000, room_size=15, floor_tex="wood_planks", wall_tex="cinder_blocks",
                  ceil_tex="rock", num_obstacles=10, obstacles_step=0.1, obstacles_moving=False):
-        super().__init__(max_episode_steps, room_size, floor_tex, wall_tex, ceil_tex)
+        super().__init__(current_level, max_episode_steps, room_size, floor_tex, wall_tex, ceil_tex)
         self.num_obstacles = num_obstacles
         self.obstacles_step = obstacles_step
         self.obstacles_moving = obstacles_moving
@@ -309,11 +307,12 @@ class MiniCrawlAvoidObstaclesFloor(MiniCrawlFloor):
                 if step_count > 0 and self.obstacles_moving:
                     o.pos = o.pos + v["direction"] * self.obstacles_step
                 if self.near(entities["agent"], o):
-                    reward = -10
+                    reward = -10 * (1 / min(self.current_level, 10))
                     truncated = True
                     return reward, terminated, truncated
 
         if self.near(entities["agent"], entities["target"]):
+            reward += self._reward(step_count)
             terminated = True
         if step_count > self.max_episode_steps:
             truncated = True
@@ -391,7 +390,7 @@ class MiniCrawlEnv(MiniWorldEnv):
         self.level_reward = 0.0
         self.total_reward = 0.0
         self.current_floor_name = "dungeon_floor"
-        self.current_floor = MiniCrawlDungeonFloor(max_episode_steps=max_episode_steps)
+        self.current_floor = MiniCrawlDungeonFloor(current_level=self.current_level, max_episode_steps=max_episode_steps)
 
         self.render_map = render_map
         self.params = params
@@ -401,7 +400,7 @@ class MiniCrawlEnv(MiniWorldEnv):
     def step(self, action):
         obs, reward, terminated, truncated, info = super().step(action)
         reward, terminated, truncated = self.current_floor.step(self.step_entities, reward, self.step_count)
-        self.level_reward += reward * self.current_level
+        self.level_reward += reward
 
         return obs, reward, terminated, truncated, info
 
@@ -439,23 +438,28 @@ class MiniCrawlEnv(MiniWorldEnv):
         return obs, info
 
     def check_max_level_reached(self):
-        return self.current_level > self.max_level
+        if self.current_level > self.max_level:
+            self.total_reward += self.max_level
+            return True
+        else:
+            return False
 
     def compute_total_reward(self):
+        self.total_reward += self.level_reward
         return self.total_reward
 
     def _select_new_floor_class(self):
         if self.current_level == self.max_level:
             self.current_floor_name = "avoid_obstacles_boss_stage"
-            return MiniCrawlAvoidObstaclesFloor(max_episode_steps=1000, obstacles_moving=True)
+            return MiniCrawlAvoidObstaclesFloor(current_level=self.current_level, max_episode_steps=1000, obstacles_moving=True)
         if self.current_floor_name == "dungeon_floor":
-            return MiniCrawlDungeonFloor(max_episode_steps=self.max_episode_steps)
+            return MiniCrawlDungeonFloor(current_level=self.current_level, max_episode_steps=self.max_episode_steps)
         elif self.current_floor_name == "put_next_boss_stage":
-            return MiniCrawlPutNextFloor(max_episode_steps=500, room_size=12)
+            return MiniCrawlPutNextFloor(current_level=self.current_level, max_episode_steps=500, room_size=12)
         elif self.current_floor_name == "pick_up_boss_stage":
-            return MiniCrawlPickUpFloor(max_episode_steps=1000, room_size=15)
+            return MiniCrawlPickUpFloor(current_level=self.current_level, max_episode_steps=1000, room_size=15)
         elif self.current_floor_name == "avoid_obstacles_boss_stage":
-            return MiniCrawlAvoidObstaclesFloor(max_episode_steps=self.max_episode_steps, obstacles_moving=False)
+            return MiniCrawlAvoidObstaclesFloor(current_level=self.current_level, max_episode_steps=self.max_episode_steps, obstacles_moving=False)
         else:
             return None
 

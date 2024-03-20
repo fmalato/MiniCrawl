@@ -17,11 +17,13 @@ if __name__ == '__main__':
         env.render()
         if terminated:
             obs, info = env.unwrapped.next_level()
+            print(f"Current level reward: {reward}")
             if env.unwrapped.check_max_level_reached():
                 env.close()
                 truncated = True
                 total_reward = env.unwrapped.compute_total_reward()
         if truncated:
+            print(f"Current level reward: {reward}")
             total_reward = env.unwrapped.compute_total_reward()
             env.close()
 

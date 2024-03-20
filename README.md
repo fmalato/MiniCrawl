@@ -48,12 +48,15 @@ The dungeon is composed of a number of levels that can be limited or unlimited. 
 or a `BossStageFloor`. For Reinforcement Learning purposes, each floor attributes a reward upon completion. Additionally,
 a total reward is computed as the sum of the floor rewards at the end of a run.
 
+Upon completing the dungeon in its entirety, an agent gets an additional `max_level` reward.
+
 ### Dungeon Floor
 A dungeon floor consists of a precedurally-generated ensemble of rooms and corridors. The goal of a dungeon floor is to
 navigate the maze and retrieve a yellow key. The agent spawns in a random room of the maze.
 
 Dungeon floors increase in size as an agent goes deeper in the dungeon. The **Reward** for a dungeon floor is
-+(1 - 0.2 * (`step_count` / `max_episode_steps`)) * `current_level` when the level is cleared, zero otherwise.
++(1 - 0.2 * (`step_count` / `max_episode_steps`)) * `current_level` when the level is cleared, -5 * (1 / min(`current_level`, 10))
+otherwise.
 
 ### Boss Stage
 Every `boss_stage_freq` dungeon floors, a `BossStageFloor` is created. Boss stages are used to diversify the skills that
@@ -61,20 +64,22 @@ an agent needs to solve the environment. Each boss stage features a prompt writt
 Currently, there are three types of `BossStageFloor`:
 - `PutNextBossStageFloor`: inspired from MiniWorld's `MiniWorld-PutNext-v0` environment. An agent spawns in the middle
 of a room featuring four colored cubes, one per each corner. The prompt on the wall randomly selects two cubes that have
-to be placed close to each other. When the mission is accomplished, the agent advances to the next level. **Reward**:
-+(1 - 0.2 * (`step_count` / `max_episode_steps`)) * `current_level` upon completion of the level, zero for failure.
+to be placed close to each other. When the mission is accomplished, the agent advances to the next level. 
+  
+  **Reward**: +(1 - 0.2 * (`step_count` / `max_episode_steps`)) * `current_level` upon completion of the level, zero for failure.
 - `PickUpBossStageFloor`: inspired from MiniWorld's `MiniWorld-Sign-v0` environment. The agent is placed in a corner of
 a big room filled with objects. The prompt specifies which object an agent must collect. Upon completion of the task, 
-the agent advances to the next level. Picking up a different object leads to failure. **Reward**:
-+(1 - 0.2 * (`step_count` / `max_episode_steps`)) * `current_level` upon completion of the level, -10 for picking up 
-the wrong object.
-- `AvoidObstaclesBossStageFloor`: inspired from [MiniGrid](https://github.com/Farama-Foundation/Minigrid)'s 
-`MiniGrid-Dynamic-Obstacles-NxN-v0` environment, the agent is placed in a corner of a big room. At the opposite corner,
-a yellow key is spawned. The room is filled with moving blue balls. Similar to [SuperHot](https://superhotgame.com/), the
-obstacles move only when the agent move. The level is cleared when the agent successfully traverses the room and
-collects the key. Colliding with an obstacle makes the agent fail. **Reward**: 
-+(1 - 0.2 * (`step_count` / `max_episode_steps`)) * `current_level` when the key is collected, -10 for colliding with 
-an obstacle.
+the agent advances to the next level. Picking up a different object leads to failure. 
+
+  **Reward**: +(1 - 0.2 * (`step_count` / `max_episode_steps`)) * `current_level` upon completion of the level, 
+  -10 * (1 / min(`current_level`, 10)) for picking up the wrong object.
+- `AvoidObstaclesBossStageFloor`: inspired from [MiniGrid](https://github.com/Farama-Foundation/Minigrid)'s `MiniGrid-Dynamic-Obstacles-NxN-v0` environment, the 
+agent is placed in a corner of a big room. At the opposite corner, a yellow key is spawned. The room is filled with 
+moving blue balls. Similar to [SuperHot](https://superhotgame.com/), the obstacles move only when the agent move. The level is cleared when the
+agent successfully traverses the room and collects the key. Colliding with an obstacle makes the agent fail. 
+
+  **Reward**: +(1 - 0.2 * (`step_count` / `max_episode_steps`)) * `current_level` when the key is collected, 
+  10 * (1 / min(`current_level`, 10)) for colliding with an obstacle.
 
 ## Known Bugs
 - Please launch the game in a folder you own (i.e. no root permissions needed). Otherwise, the game will return an error.

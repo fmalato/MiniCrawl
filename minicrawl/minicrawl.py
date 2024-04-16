@@ -389,6 +389,7 @@ class MiniCrawlEnv(MiniWorldEnv):
         self.step_count = 0
         self.level_reward = 0.0
         self.total_reward = 0.0
+        self.total_reset_needed = False
         self.current_floor_name = "dungeon_floor"
         self.current_floor = MiniCrawlDungeonFloor(current_level=self.current_level, max_episode_steps=max_episode_steps)
 
@@ -401,6 +402,14 @@ class MiniCrawlEnv(MiniWorldEnv):
         obs, reward, terminated, truncated, info = super().step(action)
         reward, terminated, truncated = self.current_floor.step(self.step_entities, reward, self.step_count)
         self.level_reward += reward
+        if terminated:
+            obs, info = self.next_level()
+            if self.check_max_level_reached():
+                truncated = True
+                reward = self.compute_total_reward()
+        if truncated:
+            reward = self.compute_total_reward()
+            self.total_reset_needed = True
 
         return obs, reward, terminated, truncated, info
 
@@ -409,6 +418,9 @@ class MiniCrawlEnv(MiniWorldEnv):
     ) -> Tuple[ObsType, dict]:
         self.step_count = 0
         self.level_reward = 0.0
+        if self.total_reset_needed:
+            self.total_reset_needed = False
+            self.total_reward = 0.0
         self.rooms_dict = {}
         self.junctions_dict = {}
         self.corrs_dict = {}

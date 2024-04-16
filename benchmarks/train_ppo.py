@@ -1,5 +1,6 @@
 import numpy as np
 import gymnasium as gym
+import wandb
 
 from stable_baselines3.ppo import PPO
 

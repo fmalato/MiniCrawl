@@ -263,7 +263,6 @@ if __name__ == '__main__':
 
     arg_parser.add_argument('-env', '--env-name', required=True, type=str)
     arg_parser.add_argument('-d', '--trajectories-base-path', required=True, type=str)
-    arg_parser.add_argument('-vd', '--validation-traj', required=True, type=str)
     arg_parser.add_argument('-e', '--epochs', required=True, type=int)
     arg_parser.add_argument('-b', '--batch-size', default=32, type=int)
     arg_parser.add_argument('-hist', '--history-length', default=16, type=int)

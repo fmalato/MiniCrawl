@@ -104,7 +104,7 @@ def evaluate_agent(agent_type, bc_agent, env, num_games, history_length, traject
         timestep = 0
         ep_reward = 0.0
         while not (terminated or truncated):
-            action, _ = agent.predict(observation, deterministic=True)
+            action, _ = agent.predict(torch.Tensor(observation).unsqueeze(0), deterministic=True)
             observation, reward, terminated, truncated, info = env.step(action)
             if args.history_length <= 1:
                 observation = observation[0]
@@ -190,8 +190,9 @@ def main(args):
     feats_dim = 1024
     lr_schedule = "constant"
     lr_value = constant_lr(0) if lr_schedule == "constant" else decreasing_lr(0)
+    use_conv3d = True if args.history_length > 1 else False
     # Env specific options
-    input_size = (1, args.history_length, 3, 60, 80)
+    input_size = (1, args.history_length, 3, 60, 80) if use_conv3d else (1, 3, 60, 80)
     post_wrappers = [lambda env, _: TorchObsGymWrapper(RolloutInfoWrapper(env), history_length=args.history_length)]
 
     if args.use_wandb:
@@ -226,7 +227,7 @@ def main(args):
         resnet_in_channels=[128, 64, 128],
         resnet_out_channels=[64, 128, 128],
         input_size=input_size,
-        use_conv3d=True,
+        use_conv3d=use_conv3d,
         device="cuda"
     )
     policy = ActorCriticPolicy(

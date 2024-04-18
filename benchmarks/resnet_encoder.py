@@ -115,7 +115,6 @@ class CausalIDMEncoder(BaseFeaturesExtractor):
         self.resnet.apply(self._init_weights)
         self.mlp.apply(self._init_weights)
 
-
         if device == "cuda" and torch.cuda.is_available():
             self.resnet.cuda()
             self.mlp.cuda()

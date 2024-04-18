@@ -87,9 +87,6 @@ class MiniCrawlDataset(Dataset):
 
 def evaluate_agent(agent_type, bc_agent, env, num_games, history_length, trajectories_path):
     os.makedirs(f"benchmarks/training/{agent_type}/", exist_ok=True)
-    if agent_type == "bc":
-        agent = bc_agent.policy
-        suff = ""
     num_timesteps = []
     success = []
     ep_durations = []
@@ -99,12 +96,11 @@ def evaluate_agent(agent_type, bc_agent, env, num_games, history_length, traject
         observation, info = env.reset()
         if history_length <= 1:
             observation = observation[0]
-        terminated = False
         truncated = False
         timestep = 0
         ep_reward = 0.0
-        while not (terminated or truncated):
-            action, _ = agent.predict(observation, deterministic=True)
+        while not truncated:
+            action, _ = bc_agent.predict(observation, deterministic=False)
             observation, reward, terminated, truncated, info = env.step(action)
             if args.history_length <= 1:
                 observation = observation[0]

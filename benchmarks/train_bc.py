@@ -122,7 +122,7 @@ def evaluate_agent(agent_type, bc_agent, env, num_games, history_length, traject
     ep_duration_std = np.std(ep_durations)
     avg_reward = np.mean(ep_rewards)
     std_reward = np.std(ep_rewards)
-    with open(f"benchmarks/training/{agent_type}/eval_per_epoch_{trajectories_path.split(sep='/')[-1]}{suff}.txt", "a+") as f:
+    with open(f"benchmarks/training/bc_eval.txt", "a+") as f:
         f.write(
             f"Avg. number of steps: {avg_steps:.3f} +/- {std_steps:.3f} | Success percentage: {success_percentage:.3f}% | Avg. episode duration: {ep_duration} +/- {ep_duration_std} | Avg. reward: {avg_reward:.3f} +/- {std_reward:.3f}\n")
     f.close()

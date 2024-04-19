@@ -15,29 +15,32 @@ from stable_baselines_bc_agent import TorchObsGymWrapper, decreasing_lr, constan
 
 
 NUM_GAMES = 100
+HISTORY_LENGTH = 4
+DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
 if __name__ == '__main__':
     env = gym.make("MiniCrawl-DungeonCrawlerEnv-v0", render_mode="human")
-    env = TorchObsGymWrapper(env, history_length=1)
+    env = TorchObsGymWrapper(env, history_length=HISTORY_LENGTH)
 
     net_arch = dict(pi=[256, 256], vf=[256, 256])
     feats_dim = 1024
     lr_schedule = "constant"
     lr_value = constant_lr(0) if lr_schedule == "constant" else decreasing_lr(0)
+    use_conv3d = True if HISTORY_LENGTH > 1 else False
 
     idm_encoder_kwargs = dict(
         feats_dim=feats_dim,
-        conv3d_in_channels=1,
+        conv3d_in_channels=HISTORY_LENGTH,
         conv3d_out_channels=128,
-        resnet_in_channels=[128, 64, 128],
+        resnet_in_channels=[128 if use_conv3d else 3, 64, 128],
         resnet_out_channels=[64, 128, 128],
-        input_size=(1, 1, 3, 60, 80),
+        input_size=(1, HISTORY_LENGTH, 3, 60, 80),
         use_conv3d=True,
         device="cuda"
     )
     policy = ActorCriticPolicy(
-        observation_space=gym.spaces.Box(low=0.0, high=1.0, shape=(3, 60, 80)),
+        observation_space=gym.spaces.Box(low=0.0, high=1.0, shape=(HISTORY_LENGTH, 3, 60, 80)),
         action_space=env.action_space,
         features_extractor_class=CausalIDMEncoder,
         features_extractor_kwargs=idm_encoder_kwargs,
@@ -45,7 +48,9 @@ if __name__ == '__main__':
         net_arch=net_arch,
         lr_schedule=constant_lr if lr_schedule == "constant" else decreasing_lr
     )
-    policy.load_state_dict(torch.load("models/bc/best_model.pth"))
+    policy.load_state_dict(torch.load("models/bc/best_model_2.pth"))
+    policy.action_net.to(DEVICE)
+
     os.makedirs(f"benchmarks/training/", exist_ok=True)
     num_timesteps = []
     success = []
@@ -54,14 +59,12 @@ if __name__ == '__main__':
     progress_bar = tqdm(range(NUM_GAMES))
     for i in progress_bar:
         observation, info = env.reset()
-        #observation = torch.Tensor(observation[0]).unsqueeze(0)
         truncated = False
         timestep = 0
         ep_reward = 0.0
         while not truncated:
             action, _ = policy.predict(observation, deterministic=False)
             observation, reward, terminated, truncated, info = env.step(action)
-            observation = torch.Tensor(observation[0]).unsqueeze(0)
             ep_reward += reward
             timestep += 1
             env.render()

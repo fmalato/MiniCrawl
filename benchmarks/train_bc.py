@@ -220,7 +220,7 @@ def main(args):
         feats_dim=feats_dim,
         conv3d_in_channels=args.history_length,
         conv3d_out_channels=128,
-        resnet_in_channels=[128, 64, 128],
+        resnet_in_channels=[128, 64, 128] if use_conv3d else [3, 64, 128],
         resnet_out_channels=[64, 128, 128],
         input_size=input_size,
         use_conv3d=use_conv3d,

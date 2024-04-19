@@ -2,6 +2,16 @@ import keyboard
 import pynput
 
 
+ACTIONS_DICT = {
+    "a": 0,
+    "d": 1,
+    "w": 2,
+    "s": 3,
+    "e": 4,
+    "q": 5
+}
+
+
 class BaseController:
     def __init__(self):
         self._last_key = None
@@ -12,19 +22,10 @@ class BaseController:
         return self._map_key_press()
 
     def _map_key_press(self):
-        action = 6
-        if self._last_key == "a":
-            action = 0
-        elif self._last_key == "d":
-            action = 1
-        elif self._last_key == "w":
-            action = 2
-        elif self._last_key == "s":
-            action = 3
-        elif self._last_key == "e":
-            action = 4
-        elif self._last_key == "q":
-            action = 5
+        try:
+            action = ACTIONS_DICT[self._last_key]
+        except KeyError:
+            action = 6
 
         return action
 
@@ -43,18 +44,9 @@ class BasePynputController:
         return self._map_key_press()
 
     def _map_key_press(self):
-        action = 6
-        if self._last_key == "a":
-            action = 0
-        elif self._last_key == "d":
-            action = 1
-        elif self._last_key == "w":
-            action = 2
-        elif self._last_key == "s":
-            action = 3
-        elif self._last_key == "e":
-            action = 4
-        elif self._last_key == "q":
-            action = 5
+        try:
+            action = ACTIONS_DICT[self._last_key]
+        except KeyError:
+            action = 6
 
         return action

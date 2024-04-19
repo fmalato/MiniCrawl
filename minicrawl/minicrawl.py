@@ -510,6 +510,7 @@ class MiniCrawlEnv(MiniWorldEnv):
         self.step_entities["agent"] = self.agent
 
     def _initialize_current_floor(self):
+        self.stairs = None
         # TODO: find a better way to organize this
         if self.current_floor_name == "dungeon_floor":
             self._link_entities()
@@ -519,6 +520,7 @@ class MiniCrawlEnv(MiniWorldEnv):
             self.entities.append(stairs)
             self.place_agent(room=self.rooms_dict[agent_room])
             self.step_entities["goal"] = stairs
+            self.stairs = self.entities_dict["key"]
         elif self.current_floor_name == "put_next_boss_stage":
             self.step_entities["target_1"] = self.entities_dict["target_1"]
             self.step_entities["target_2"] = self.entities_dict["target_2"]

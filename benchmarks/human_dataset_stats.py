@@ -94,6 +94,8 @@ if __name__ == '__main__':
         level_maps = data_no_map["level_map"]
         level_finished_indices = np.argwhere(data_no_map["new_level"])
         level_finished_indices = np.insert(level_finished_indices, 0, 0)
+        if level_finished_indices.shape[0] < 3:
+            level_finished_indices = np.append(level_finished_indices, level_maps.shape[0] - 1)
         for i in range(2):
             try:
                 # TODO: something wrong with this
@@ -107,6 +109,8 @@ if __name__ == '__main__':
         level_maps = data_no_map["level_map"]
         level_finished_indices = np.argwhere(data_no_map["new_level"])
         level_finished_indices = np.insert(level_finished_indices, 0, 0)
+        if level_finished_indices.shape[0] < 3:
+            level_finished_indices = np.append(level_finished_indices, level_maps.shape[0] - 1)
         for i in range(2):
             try:
                 plot_map_occupancy(level_maps[int(level_finished_indices[i]):int(level_finished_indices[i + 1]), :, :, :], occupancy_map_ax[1, n])

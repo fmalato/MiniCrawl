@@ -74,7 +74,8 @@ if __name__ == '__main__':
     # Style
     action_distrib_ax.legend(handles=[no_map_handle, map_handle], labels=["No map", "Map"])
     plt.tight_layout()
-    plt.show()
+    action_distrib_fig.savefig("figures/actions_distribution.png")
+    action_distrib_fig.savefig("figures/actions_distribution.pdf")
 
     #################### PLOT OCCUPANCY MAP ####################
     """for r in runs:
@@ -87,7 +88,7 @@ if __name__ == '__main__':
             for i in range(level_finished_indices.shape[0] - 1):
                 plot_map_occupancy(level_maps[level_finished_indices[i]:level_finished_indices[i-1], :, :, :])"""
     # No map
-    occupancy_map_fig, occupancy_map_ax = plt.subplots(nrows=2, ncols=10, figsize=(30, 6))
+    occupancy_map_fig, occupancy_map_ax = plt.subplots(nrows=2, ncols=5, figsize=(15, 6))
     n = 0
     for k in range(3, 8, 1):
         data_no_map = np.load(f"map_plot/no_map_{k}.npz", allow_pickle=True)
@@ -96,26 +97,29 @@ if __name__ == '__main__':
         level_finished_indices = np.insert(level_finished_indices, 0, 0)
         if level_finished_indices.shape[0] < 3:
             level_finished_indices = np.append(level_finished_indices, level_maps.shape[0] - 1)
-        for i in range(2):
-            try:
-                # TODO: something wrong with this
-                plot_map_occupancy(level_maps[int(level_finished_indices[i]):int(level_finished_indices[i + 1]), :, :, :], occupancy_map_ax[0, n])
-                n += 1
-            except IndexError:
-                continue
+        try:
+            if k == 6:
+                plot_map_occupancy(level_maps[int(level_finished_indices[1]):int(level_finished_indices[2]), :, :, :], occupancy_map_ax[0, n])
+            else:
+                plot_map_occupancy(level_maps[int(level_finished_indices[0]):int(level_finished_indices[1]), :, :, :], occupancy_map_ax[0, n])
+            n += 1
+        except IndexError:
+            continue
         # Map
-        n -= 2
+        n -= 1
         data_no_map = np.load(f"map_plot/map_shown_{k}.npz", allow_pickle=True)
         level_maps = data_no_map["level_map"]
         level_finished_indices = np.argwhere(data_no_map["new_level"])
         level_finished_indices = np.insert(level_finished_indices, 0, 0)
         if level_finished_indices.shape[0] < 3:
             level_finished_indices = np.append(level_finished_indices, level_maps.shape[0] - 1)
-        for i in range(2):
-            try:
-                plot_map_occupancy(level_maps[int(level_finished_indices[i]):int(level_finished_indices[i + 1]), :, :, :], occupancy_map_ax[1, n])
-                n += 1
-            except IndexError:
-                continue
+        try:
+            plot_map_occupancy(level_maps[int(level_finished_indices[0]):int(level_finished_indices[1]), :, :, :], occupancy_map_ax[1, n])
+            n += 1
+        except IndexError:
+            continue
 
+    plt.tight_layout()
     plt.show()
+    occupancy_map_fig.savefig("figures/occupancy_maps.png")
+    occupancy_map_fig.savefig("figures/occupancy_maps.pdf")

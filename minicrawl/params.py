@@ -23,9 +23,9 @@ DEFAULT_PARAMS.set("cam_fwd_disp", 0, -0.05, 0.10)
 
 
 DEFAULT_DM_PARAMS = dict(
-    starting_grid_size=7,
+    starting_grid_size=3,
     max_grid_size=None,
-    increment_freq=2,
+    increment_freq=4,
     connection_density=0.75
 )
 

@@ -33,11 +33,12 @@ class DungeonMaster:
         self._grid = None
         self._grid_graphs = []
         self._connects = {}
-        self._current_level = 0
+        self._current_level = 1
         self._min_rooms = self._grid_size
         self._floor_map_edge = 80
 
         self._create_dungeon_floor()
+        self.level_name = "dungeon_floor"
 
     def _create_boss_stage(self, stage_type):
         self._grid = np.zeros(shape=(1, 1))
@@ -164,14 +165,14 @@ class DungeonMaster:
         if self._current_level % self._increment_freq == 0 and self._current_level != 0:
             boss_stage_type = np.random.choice(BOSS_STAGES)
             self._create_boss_stage(stage_type=boss_stage_type)
-            level_name = f"{boss_stage_type}_boss_stage"
+            self.level_name = f"{boss_stage_type}_boss_stage"
         else:
             if self._current_level % self._increment_freq == 1 and self._current_level != 1:
                 self.increment_grid_size()
             self._create_dungeon_floor()
-            level_name = "dungeon_floor"
+            self.level_name = "dungeon_floor"
 
-        return level_name
+        return self.level_name
 
     def increment_level_count(self):
         self._current_level += 1
@@ -192,6 +193,9 @@ class DungeonMaster:
 
     def get_current_floor(self):
         return self._maze_graph, self._grid
+
+    def get_current_level_name(self):
+        return self.level_name
 
     def get_connections(self):
         return self._connects
@@ -273,11 +277,11 @@ class DungeonMaster:
             floor_map[start_x: end_x, start_y: end_y, :] = COLORS["BROWN"]
         # Draw agent position
         if agent_pos is not None:
-            #max_pos = self._grid_size
+            max_pos = self._grid_size
             #TODO: this works with MiniWorld but doesn't with Godot
-            max_pos = self._grid_size * cell_size
-            agent_pos_x = int((agent_pos[0] / max_pos) * self._floor_map_edge)
-            agent_pos_y = int((agent_pos[2] / max_pos) * self._floor_map_edge)
+            #max_pos = self._grid_size * cell_size
+            agent_pos_x = int((agent_pos[0] / max_pos) * self._floor_map_edge) + half_cell
+            agent_pos_y = int((agent_pos[1] / max_pos) * self._floor_map_edge) + half_cell
             floor_map[max(agent_pos_y - 1, 0): min(agent_pos_y + 2, self._floor_map_edge), max(agent_pos_x - 1, 0): min(agent_pos_x + 2, self._floor_map_edge), :] = COLORS["RED"]
         #floor_map[agent_pos_y, agent_pos_x, :] = COLORS["RED"]
         # Draw agent direction
@@ -287,8 +291,8 @@ class DungeonMaster:
         #floor_map[max(min(agent_pos_y + agent_dir_y, self._floor_map_edge), 0), max(min(agent_pos_x + agent_dir_x, self._floor_map_edge), 0), :] = COLORS["RED"]
         # Draw goal
         if goal_pos is not None:
-            goal_pos_x = int((goal_pos[0] / max_pos) * self._floor_map_edge)
-            goal_pos_y = int((goal_pos[2] / max_pos) * self._floor_map_edge)
+            goal_pos_x = int((goal_pos[0] / max_pos) * self._floor_map_edge) + half_cell
+            goal_pos_y = int((goal_pos[1] / max_pos) * self._floor_map_edge) + half_cell
             floor_map[goal_pos_y - 1: goal_pos_y + 2, goal_pos_x - 1: goal_pos_x + 2, :] = COLORS["YELLOW"]
         #floor_map[goal_pos_y, goal_pos_x, :] = COLORS["YELLOW"]
 
